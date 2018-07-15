@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace ChendanKelly.Data
 {
-    public class BaobeiDailyPrices
+    public class BaobeiDailyPrice
     {
         [System.ComponentModel.DataAnnotations.Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
