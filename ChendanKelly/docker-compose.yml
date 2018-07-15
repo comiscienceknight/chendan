@@ -1,0 +1,8 @@
+version: '3.4'
+
+services:
+  chendankelly:
+    image: ${DOCKER_REGISTRY}chendankelly
+    build:
+      context: .
+      dockerfile: ChendanKelly\Dockerfile
