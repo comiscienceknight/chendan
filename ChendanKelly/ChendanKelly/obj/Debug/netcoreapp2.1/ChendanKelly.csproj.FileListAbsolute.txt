@@ -5,7 +5,6 @@ C:\Projects\ChendanKelly\chendan\ChendanKelly\ChendanKelly\bin\Debug\netcoreapp2
 C:\Projects\ChendanKelly\chendan\ChendanKelly\ChendanKelly\bin\Debug\netcoreapp2.1\ChendanKelly.pdb
 C:\Projects\ChendanKelly\chendan\ChendanKelly\ChendanKelly\bin\Debug\netcoreapp2.1\ChendanKelly.Views.dll
 C:\Projects\ChendanKelly\chendan\ChendanKelly\ChendanKelly\bin\Debug\netcoreapp2.1\ChendanKelly.Views.pdb
-C:\Projects\ChendanKelly\chendan\ChendanKelly\ChendanKelly\obj\Debug\netcoreapp2.1\ChendanKelly.csprojAssemblyReference.cache
 C:\Projects\ChendanKelly\chendan\ChendanKelly\ChendanKelly\obj\Debug\netcoreapp2.1\ChendanKelly.csproj.CoreCompileInputs.cache
 C:\Projects\ChendanKelly\chendan\ChendanKelly\ChendanKelly\obj\Debug\netcoreapp2.1\ChendanKelly.RazorAssemblyInfo.cache
 C:\Projects\ChendanKelly\chendan\ChendanKelly\ChendanKelly\obj\Debug\netcoreapp2.1\ChendanKelly.RazorAssemblyInfo.cs
