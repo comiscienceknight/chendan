@@ -3,14 +3,84 @@
 }
 
 
-<div class="row">
+<div class="row" id="datasource">
 
-    <div class="col-lg-4">
-        abcdefg
+    <div class="col-lg-4" style="padding:5px;">
+        <label for="start">文件对应的日期</label>
+        <input type="date" id="file-date-picker" name="trip"
+               value="2018-07-22"
+               min="2018-01-01" max="2018-12-31" />
+        <input id="file-picker" type="file" value="选择数据文件上传到系统" />
+        <div id="fileGrid" style="height:600px;min-height: 600px;width:100%;margin-top:5px;"
+             class="ag-theme-balham"></div>
     </div>
 
-    <div class="col-lg-8">
-        hijklmnopqrstuvwxyz
+    <div class="col-lg-8" style="padding:5px;">
+        <h4 id="file-name"></h4>
+        <div id="datasourceGrid" style="height:600px;min-height: 600px;width:100%;margin-top:5px;"
+             class="ag-theme-balham"></div>
     </div>
 
 </div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.8.0/xlsx.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.8.0/jszip.js"></script>
+
+<script type="text/javascript" charset="utf-8">
+    $(document).ready(function () {
+        $('#file-date-picker').val(new Date().toDateInputValue());
+    });
+
+    var fileGridColumnDefs = [
+        {
+            headerName: "Date", field: "date", width: 120
+        },
+        {
+            headerName: "FileName", field: "fileName"
+        }
+    ];
+    var fileRowData = [
+        { date: "2018-07-01", fileName: "excel file number 1.csv" },
+        { date: "2018-07-02", fileName: "excel file number xxxxxxxxx.csv" },
+        { date: "2018-07-03", fileName: "excel file number 1.xls" }
+    ];
+    var fileGridOptions = {
+        columnDefs: fileGridColumnDefs,
+        rowData: fileRowData
+    };
+    var fileGrid = document.querySelector('#fileGrid');
+    new agGrid.Grid(fileGrid, fileGridOptions);
+
+    $("#file-picker").change(function (e) {
+        let file = e.currentTarget.files[0];
+        var reader = new FileReader();
+        reader.onload = function () {
+            var fileJson = csvJSON(reader.result);
+           // debugger;
+            if (fileJson.length > 0 && fileJson[0]["\"订单编号\""] !== undefined) {
+                uploadBaobei($('#file-date-picker')[0].value, fileJson);
+            }
+        };
+        reader.readAsText(file, 'utf-8');
+    });
+
+    function uploadBaobei(date, jsonValue) {
+        debugger;
+    }
+
+    function csvJSON(csv) {
+        var lines = csv.split("\n");
+        var result = [];
+        var headers = lines[0].split(",");
+        for (var i = 1; i < lines.length; i++) {
+            var obj = {};
+            var currentline = lines[i].split(",");
+            for (var j = 0; j < headers.length; j++) {
+                obj[headers[j]] = currentline[j];
+            }
+            result.push(obj);
+        }
+        //return result; //JavaScript object
+        return result; //JSON
+    }
+</script>

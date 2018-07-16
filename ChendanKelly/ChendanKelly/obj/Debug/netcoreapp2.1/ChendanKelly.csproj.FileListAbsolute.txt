@@ -33,3 +33,4 @@ C:\Projects\ChendanKelly\chendan\ChendanKelly\ChendanKelly\obj\Debug\netcoreapp2
 C:\Projects\ChendanKelly\chendan\ChendanKelly\ChendanKelly\obj\Debug\netcoreapp2.1\ChendanKelly.pdb
 C:\Projects\ChendanKelly\chendan\ChendanKelly\ChendanKelly\obj\Debug\netcoreapp2.1\ChendanKelly.csproj.CopyComplete
 C:\Projects\ChendanKelly\chendan\ChendanKelly\ChendanKelly\obj\Debug\netcoreapp2.1\Razor\Views\Home\DataSource.g.cshtml.cs
+C:\Projects\ChendanKelly\chendan\ChendanKelly\ChendanKelly\obj\Debug\netcoreapp2.1\ChendanKelly.csprojAssemblyReference.cache
