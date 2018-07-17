@@ -11,7 +11,6 @@ namespace ChendanKelly.Data
         Task DeleteDataFromOrderTableAsync(DateTime date);
     }
 
-
     public class DatabaseRepository : IDatabaseRepository
     {
         private readonly ApplicationDbContext _dbContext;
