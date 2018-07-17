@@ -28,8 +28,20 @@
 
 <script type="text/javascript" charset="utf-8">
     $(document).ready(function () {
-        $('#file-date-picker').val(new Date().toDateInputValue());
+        $('#file-date-picker').val(formatDate(new Date()));
     });
+
+    function formatDate(date) {
+        var d = new Date(date),
+            month = '' + (d.getMonth() + 1),
+            day = '' + d.getDate(),
+            year = d.getFullYear();
+
+        if (month.length < 2) month = '0' + month;
+        if (day.length < 2) day = '0' + day;
+
+        return [year, month, day].join('-');
+    }
 
     var fileGridColumnDefs = [
         {
@@ -39,33 +51,78 @@
             headerName: "FileName", field: "fileName"
         }
     ];
-    var fileRowData = [
-        { date: "2018-07-01", fileName: "excel file number 1.csv" },
-        { date: "2018-07-02", fileName: "excel file number xxxxxxxxx.csv" },
-        { date: "2018-07-03", fileName: "excel file number 1.xls" }
-    ];
     var fileGridOptions = {
         columnDefs: fileGridColumnDefs,
-        rowData: fileRowData
+        rowSelection: 'single',
+        onSelectionChanged: onFileGridSelectionChanged
+        //rowData: fileRowData
     };
     var fileGrid = document.querySelector('#fileGrid');
     new agGrid.Grid(fileGrid, fileGridOptions);
+    agGrid.simpleHttpRequest({ url: '/DataSource/GetAllFiles' }).then(function (data) {
+        debugger;
+        let newData = [];
+        for (let i = 0; i < data.length; i++) {
+            data[i].date = data[i].date.slice(0, 10);
+            newData.push(data[i]);
+        }
+        fileGridOptions.api.setRowData(data);
+    });
 
     $("#file-picker").change(function (e) {
         let file = e.currentTarget.files[0];
         var reader = new FileReader();
         reader.onload = function () {
+            debugger;
             var fileJson = csvJSON(reader.result);
-           // debugger;
-            if (fileJson.length > 0 && fileJson[0]["\"订单编号\""] !== undefined) {
-                uploadBaobei($('#file-date-picker')[0].value, fileJson);
+            let orderId = fileJson[0]["订单编号"] == undefined ? fileJson[0]["\"订单编号\""] : fileJson[0]["订单编号"];
+            let baobeiId = fileJson[0]["外部系统编号"] == undefined ? fileJson[0]["\"外部系统编号\""] : fileJson[0]["外部系统编号"];
+            if (fileJson.length > 0 && orderId !== undefined && baobeiId === undefined) {
+                let newOrders = [];
+                for (let i = 0; i < fileJson.length; i++) {
+                    let orderId = fileJson[i]["订单编号"] == undefined ? fileJson[i]["\"订单编号\""] : fileJson[i]["订单编号"];
+                    let amount = fileJson[i]["总金额"] == undefined ? fileJson[i]["\"总金额\""] : fileJson[i]["总金额"];
+                    newOrders.push({
+                        orderId: orderId,
+                        amount: amount,
+                    });
+                }
+                uploadBaobei($('#file-date-picker')[0].value, newOrders);
+            }
+            else if (fileJson.length > 0 && orderId !== undefined && baobeiId !== undefined) {
+                uploadOrder($('#file-date-picker')[0].value, fileJson);
             }
         };
         reader.readAsText(file, 'utf-8');
     });
 
+    function onFileGridSelectionChanged() {
+        var selectedRows = fileGridOptions.api.getSelectedRows();
+        alert(JSON.stringify(selectedRows[0]));
+    }
+
     function uploadBaobei(date, jsonValue) {
         debugger;
+        fetch('/DataSource/InsertDataToOrderTable', {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ date, newOrders: jsonValue })
+        });
+    }
+
+    function uploadOrder(date, jsonValue) {
+        debugger;
+        fetch('/DataSource/InsertDataToOrderTable', {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ date, newOrders: jsonValue })
+        });
     }
 
     function csvJSON(csv) {
@@ -80,7 +137,6 @@
             }
             result.push(obj);
         }
-        //return result; //JavaScript object
-        return result; //JSON
+        return result;
     }
 </script>
