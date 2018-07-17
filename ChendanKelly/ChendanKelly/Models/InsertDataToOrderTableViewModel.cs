@@ -10,5 +10,6 @@ namespace ChendanKelly.Models
     {
         public List<Order> NewOrders { get; set; }
         public DateTime Date { get; set; }
+        public string FileName { get; set; }
     }
 }

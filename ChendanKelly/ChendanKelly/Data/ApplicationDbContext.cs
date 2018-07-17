@@ -22,5 +22,6 @@ namespace ChendanKelly.Data
         public DbSet<Baobei> Baobeis { get; set; }
         public DbSet<Fee> Fees { get; set; }
         public DbSet<Order> Orders { get; set; }
+        public DbSet<File> Files { get; set; }
     }
 }

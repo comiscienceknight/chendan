@@ -23,32 +23,28 @@ namespace ChendanKelly.Controllers
         [HttpGet]
         public async Task<List<File>> GetAllFiles()
         {
-            var result = new List<File>();
-            for(int i = 0; i < 225; i++)
-            {
-                result.Add(new Data.File
-                {
-                    Date = DateTime.UtcNow.AddDays(-i),
-                    FileName = DateTime.UtcNow.AddDays(-i).ToString() + ".csv",
-                    FileType = "demo",
-                    Id = i
-                });
-            }
-            return result;
+            return await _dbRepo.GetAllFilesAsync();
+        }
+
+        [Route("[action]")]
+        [HttpGet]
+        public async Task<List<Order>> GetOrders(string date)
+        {
+            return await _dbRepo.GetOrdersAsync(date);
         }
 
         [Route("[action]")]
         [HttpPost]
         public async Task InsertDataToOrderTable([FromBody]InsertDataToOrderTableViewModel model)
         {
-            await _dbRepo.InsertDataToOrderTableAsync(model.NewOrders, model.Date);
+            await _dbRepo.InsertDataToOrderTableAsync(model.NewOrders, model.Date, model.FileName);
         }
 
         [Route("[action]")]
         [HttpPost]
-        public async Task DeleteDataFromOrderTableAsync([FromBody]DeleteDataFromOrderTableViewModel model)
+        public async Task DeleteDataFromOrderTableAsync([FromBody]File model)
         {
-            await _dbRepo.DeleteDataFromOrderTableAsync(model.Date);
+            await _dbRepo.DeleteDataFromOrderTableAsync(model.Date, model.Id);
         }
     }
 }

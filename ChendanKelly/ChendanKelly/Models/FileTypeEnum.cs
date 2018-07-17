@@ -5,9 +5,10 @@ using System.Threading.Tasks;
 
 namespace ChendanKelly.Models
 {
-    public class DeleteDataFromOrderTableViewModel
+    public enum FileTypeEnum
     {
-        public DateTime Date { get; set; }
-        public int FileId { get; set; }
+        Baobei,
+        Order,
+        Fee
     }
 }

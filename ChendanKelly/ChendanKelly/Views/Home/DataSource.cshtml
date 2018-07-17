@@ -6,17 +6,23 @@
 <div class="row" id="datasource">
 
     <div class="col-lg-4" style="padding:5px;">
-        <label for="start">文件对应的日期</label>
-        <input type="date" id="file-date-picker" name="trip"
-               value="2018-07-22"
-               min="2018-01-01" max="2018-12-31" />
-        <input id="file-picker" type="file" value="选择数据文件上传到系统" />
-        <div id="fileGrid" style="height:600px;min-height: 600px;width:100%;margin-top:5px;"
-             class="ag-theme-balham"></div>
+        <div style="height:50px">
+            <label for="start">文件对应的日期</label>
+            <input type="date" id="file-date-picker" name="trip"
+                   value="2018-07-22"
+                   min="2018-01-01" max="2018-12-31" />
+            <input id="file-picker" type="file" value="选择数据文件上传到系统" />
+        </div>
+        <div >
+            <div id="fileGrid" style="height:600px;min-height: 600px;width:100%;margin-top:5px;"
+                    class="ag-theme-balham"></div>
+        </div>
     </div>
 
     <div class="col-lg-8" style="padding:5px;">
-        <h4 id="file-name"></h4>
+        <div style="height:50px">
+            <button id="delete-selected-items" onclick="deleteSelectedItems()">删除表格中内容</button>
+        </div>
         <div id="datasourceGrid" style="height:600px;min-height: 600px;width:100%;margin-top:5px;"
              class="ag-theme-balham"></div>
     </div>
@@ -31,24 +37,14 @@
         $('#file-date-picker').val(formatDate(new Date()));
     });
 
-    function formatDate(date) {
-        var d = new Date(date),
-            month = '' + (d.getMonth() + 1),
-            day = '' + d.getDate(),
-            year = d.getFullYear();
-
-        if (month.length < 2) month = '0' + month;
-        if (day.length < 2) day = '0' + day;
-
-        return [year, month, day].join('-');
-    }
+    let selectionRow = null;
 
     var fileGridColumnDefs = [
         {
-            headerName: "Date", field: "date", width: 120
+            headerName: "Date", field: "date", width: 90
         },
         {
-            headerName: "FileName", field: "fileName"
+            headerName: "FileName", field: "fileName", width: 250
         }
     ];
     var fileGridOptions = {
@@ -59,21 +55,21 @@
     };
     var fileGrid = document.querySelector('#fileGrid');
     new agGrid.Grid(fileGrid, fileGridOptions);
-    agGrid.simpleHttpRequest({ url: '/DataSource/GetAllFiles' }).then(function (data) {
-        debugger;
-        let newData = [];
-        for (let i = 0; i < data.length; i++) {
-            data[i].date = data[i].date.slice(0, 10);
-            newData.push(data[i]);
-        }
-        fileGridOptions.api.setRowData(data);
-    });
+    refreshFileGrid();
+
+
+    var datasourceGridOptions = {
+        rowSelection: 'single',
+        columnDefs: []
+    };
+    var datasourceGrid = document.querySelector('#datasourceGrid');
+    new agGrid.Grid(datasourceGrid, datasourceGridOptions);
+    refreshDatasourceGrid();
 
     $("#file-picker").change(function (e) {
         let file = e.currentTarget.files[0];
         var reader = new FileReader();
         reader.onload = function () {
-            debugger;
             var fileJson = csvJSON(reader.result);
             let orderId = fileJson[0]["订单编号"] == undefined ? fileJson[0]["\"订单编号\""] : fileJson[0]["订单编号"];
             let baobeiId = fileJson[0]["外部系统编号"] == undefined ? fileJson[0]["\"外部系统编号\""] : fileJson[0]["外部系统编号"];
@@ -87,22 +83,64 @@
                         amount: amount,
                     });
                 }
-                uploadBaobei($('#file-date-picker')[0].value, newOrders);
+                uploadOrder($('#file-date-picker')[0].value, newOrders, file.name);
             }
             else if (fileJson.length > 0 && orderId !== undefined && baobeiId !== undefined) {
-                uploadOrder($('#file-date-picker')[0].value, fileJson);
+                uploadBaobei($('#file-date-picker')[0].value, newOrders);
             }
         };
         reader.readAsText(file, 'utf-8');
     });
 
+    function refreshFileGrid() {
+        agGrid.simpleHttpRequest({ url: '/DataSource/GetAllFiles' }).then(function (data) {
+            let newData = [];
+            for (let i = 0; i < data.length; i++) {
+                data[i].date = data[i].date.slice(0, 10);
+                newData.push(data[i]);
+            }
+            fileGridOptions.api.setRowData(data);
+        });
+    }
+
     function onFileGridSelectionChanged() {
         var selectedRows = fileGridOptions.api.getSelectedRows();
-        alert(JSON.stringify(selectedRows[0]));
+        selectionRow = selectedRows[0];
+        refreshDatasourceGrid();
+        //alert(JSON.stringify(selectedRows[0]));
+    }
+
+    function refreshDatasourceGrid() {
+        if (selectionRow != null) {
+            switch (selectionRow.fileType) {
+                case 'Baobei':
+                    break;
+                case 'Order':
+                    debugger;
+                    datasourceGridOptions.api.setColumnDefs([
+                        {
+                            headerName: "订单编号", field: "orderId"
+                        },
+                        {
+                            headerName: "总金额", field: "amount"
+                        }
+                    ]);
+                    agGrid.simpleHttpRequest({ url: '/DataSource/GetOrders?date=' + selectionRow.date }).then(function (data) {
+                        datasourceGridOptions.api.setRowData(data);
+                    });
+                    break;
+                case 'Fee':
+                    break;
+            }
+        }
+        else {
+            datasourceGridOptions.api.setColumnDefs([
+            ]);
+            datasourceGridOptions.api.setRowData([]);
+        }
     }
 
     function uploadBaobei(date, jsonValue) {
-        debugger;
         fetch('/DataSource/InsertDataToOrderTable', {
             method: 'POST',
             headers: {
@@ -110,19 +148,50 @@
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({ date, newOrders: jsonValue })
+        }).then(e => {
+            if (e.status === 200) {
+                refreshFileGrid();
+            }
         });
     }
 
-    function uploadOrder(date, jsonValue) {
-        debugger;
+    function deleteSelectedItems() {
+        if (selectionRow != null) {
+            fetch('/DataSource/DeleteDataFromOrderTableAsync', {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(selectionRow)
+            }).then(e => {
+                debugger;
+                if (e.status === 200) {
+                    refreshFileGrid();
+                    selectionRow = null;
+                    refreshDatasourceGrid();
+                }
+            });
+        }
+    }
+
+    function uploadOrder(date, jsonValue, fileName) {
         fetch('/DataSource/InsertDataToOrderTable', {
             method: 'POST',
             headers: {
                 'Accept': 'application/json',
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ date, newOrders: jsonValue })
-        });
+            body: JSON.stringify({
+                date,
+                newOrders: jsonValue,
+                fileName
+            })
+        }).then(e => {
+            if (e.status === 200) {
+                refreshFileGrid();
+            }
+        });;
     }
 
     function csvJSON(csv) {
@@ -139,4 +208,17 @@
         }
         return result;
     }
+
+    function formatDate(date) {
+        var d = new Date(date),
+            month = '' + (d.getMonth() + 1),
+            day = '' + d.getDate(),
+            year = d.getFullYear();
+
+        if (month.length < 2) month = '0' + month;
+        if (day.length < 2) day = '0' + day;
+
+        return [year, month, day].join('-');
+    }
+
 </script>
