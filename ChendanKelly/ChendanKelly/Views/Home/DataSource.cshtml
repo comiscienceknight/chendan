@@ -86,7 +86,20 @@
                 uploadOrder($('#file-date-picker')[0].value, newOrders, file.name);
             }
             else if (fileJson.length > 0 && orderId !== undefined && baobeiId !== undefined) {
-                uploadBaobei($('#file-date-picker')[0].value, newOrders);
+                let newBaobeis = [];
+                for (let i = 0; i < fileJson.length; i++) {
+                    let orderId = fileJson[i]["订单编号"] == undefined ? fileJson[i]["\"订单编号\""] : fileJson[i]["订单编号"];
+                    let baobeiExternalId = fileJson[i]["外部系统编号"] == undefined ? fileJson[i]["\"外部系统编号\""] : fileJson[i]["外部系统编号"];
+                    let quantity = fileJson[i]["购买数量"] == undefined ? fileJson[i]["\"购买数量\""] : fileJson[i]["购买数量"];
+                    let baobeiTitle = fileJson[i]["标题"] == undefined ? fileJson[i]["\"标题\""] : fileJson[i]["标题"];
+                    newBaobeis.push({
+                        orderId: orderId,
+                        baobeiExternalId,
+                        quantity,
+                        baobeiTitle
+                    });
+                }
+                uploadBaobei($('#file-date-picker')[0].value, newBaobeis, file.name);
             }
         };
         reader.readAsText(file, 'utf-8');
@@ -114,9 +127,26 @@
         if (selectionRow != null) {
             switch (selectionRow.fileType) {
                 case 'Baobei':
+                    debugger;
+                    datasourceGridOptions.api.setColumnDefs([
+                        {
+                            headerName: "订单编号", field: "orderId"
+                        },
+                        {
+                            headerName: "外部系统编号", field: "baobeiExternalId"
+                        },
+                        {
+                            headerName: "购买数量", field: "quantity"
+                        },
+                        {
+                            headerName: "标题", field: "baobeiTitle"
+                        }
+                    ]);
+                    agGrid.simpleHttpRequest({ url: '/DataSource/GetBaobeis?date=' + selectionRow.date }).then(function (data) {
+                        datasourceGridOptions.api.setRowData(data);
+                    });
                     break;
                 case 'Order':
-                    debugger;
                     datasourceGridOptions.api.setColumnDefs([
                         {
                             headerName: "订单编号", field: "orderId"
@@ -140,14 +170,14 @@
         }
     }
 
-    function uploadBaobei(date, jsonValue) {
-        fetch('/DataSource/InsertDataToOrderTable', {
+    function uploadBaobei(date, jsonValue, fileName) {
+        fetch('/DataSource/InsertDataToBaobeiTable', {
             method: 'POST',
             headers: {
                 'Accept': 'application/json',
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ date, newOrders: jsonValue })
+            body: JSON.stringify({ date, newBaobeis: jsonValue, fileName })
         }).then(e => {
             if (e.status === 200) {
                 refreshFileGrid();
@@ -157,7 +187,14 @@
 
     function deleteSelectedItems() {
         if (selectionRow != null) {
-            fetch('/DataSource/DeleteDataFromOrderTableAsync', {
+            let fetchUrl = '/DataSource/';
+            if (selectionRow.fileType == 'Order') {
+                fetchUrl = fetchUrl + 'DeleteDataFromOrderTableAsync';
+            }
+            else if (selectionRow.fileType == 'Baobei') {
+                fetchUrl = fetchUrl + 'DeleteDataFromBaobeiTableAsync';
+            }
+            fetch(fetchUrl, {
                 method: 'POST',
                 headers: {
                     'Accept': 'application/json',

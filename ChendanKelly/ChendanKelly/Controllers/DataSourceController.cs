@@ -26,6 +26,8 @@ namespace ChendanKelly.Controllers
             return await _dbRepo.GetAllFilesAsync();
         }
 
+        
+        #region orders
         [Route("[action]")]
         [HttpGet]
         public async Task<List<Order>> GetOrders(string date)
@@ -46,5 +48,30 @@ namespace ChendanKelly.Controllers
         {
             await _dbRepo.DeleteDataFromOrderTableAsync(model.Date, model.Id);
         }
+        #endregion
+
+
+        #region Baobei
+        [Route("[action]")]
+        [HttpGet]
+        public async Task<List<Baobei>> GetBaobeis(string date)
+        {
+            return await _dbRepo.GetBaobeisAsync(date);
+        }
+
+        [Route("[action]")]
+        [HttpPost]
+        public async Task InsertDataToBaobeiTable([FromBody]InsertDataToBaobeiTableViewModel model)
+        {
+            await _dbRepo.InsertDataToBaobeiTableAsync(model.NewBaobeis, model.Date, model.FileName);
+        }
+
+        [Route("[action]")]
+        [HttpPost]
+        public async Task DeleteDataFromBaobeiTableAsync([FromBody]File model)
+        {
+            await _dbRepo.DeleteDataFromBaobeiTableAsync(model.Date, model.Id);
+        }
+        #endregion
     }
 }

@@ -69,4 +69,3 @@ C:\Projects\Beau.Fullstack\chendan\ChendanKelly\ChendanKelly\obj\Debug\netcoreap
 C:\Projects\Beau.Fullstack\chendan\ChendanKelly\ChendanKelly\obj\Debug\netcoreapp2.1\ChendanKelly.dll
 C:\Projects\Beau.Fullstack\chendan\ChendanKelly\ChendanKelly\obj\Debug\netcoreapp2.1\ChendanKelly.pdb
 C:\Projects\Beau.Fullstack\chendan\ChendanKelly\ChendanKelly\obj\Debug\netcoreapp2.1\ChendanKelly.csproj.CopyComplete
-C:\Projects\Beau.Fullstack\chendan\ChendanKelly\ChendanKelly\obj\Debug\netcoreapp2.1\ChendanKelly.csprojAssemblyReference.cache

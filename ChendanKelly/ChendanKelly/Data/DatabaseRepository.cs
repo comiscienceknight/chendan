@@ -15,6 +15,11 @@ namespace ChendanKelly.Data
         Task InsertDataToOrderTableAsync(List<Order> newOrders, DateTime date,
             string fileName);
         Task DeleteDataFromOrderTableAsync(DateTime date, int fileId);
+
+        Task<List<Baobei>> GetBaobeisAsync(string date);
+        Task InsertDataToBaobeiTableAsync(List<Baobei> newOrders, DateTime date,
+            string fileName);
+        Task DeleteDataFromBaobeiTableAsync(DateTime date, int fileId);
     }
 
     public class DatabaseRepository : IDatabaseRepository
@@ -30,6 +35,8 @@ namespace ChendanKelly.Data
             return await _dbContext.Files.ToListAsync();
         }
 
+
+        #region orders
         public async Task<List<Order>> GetOrdersAsync(string date)
         {
             var orders = await _dbContext.Orders.Where(p => p.OriginSourceDate != null &&
@@ -65,5 +72,44 @@ namespace ChendanKelly.Data
             });
             await _dbContext.SaveChangesAsync();
         }
+        #endregion
+
+
+        #region baobeis
+        public async Task<List<Baobei>> GetBaobeisAsync(string date)
+        {
+            var baobeis = await _dbContext.Baobeis.Where(p => p.OriginSourceDate != null &&
+                p.OriginSourceDate.Value.Date == Convert.ToDateTime(date)).ToListAsync();
+            return baobeis;
+        }
+
+        public async Task InsertDataToBaobeiTableAsync(List<Baobei> newBaobeis, DateTime date, string fileName)
+        {
+            foreach (var bb in newBaobeis)
+            {
+                bb.OriginSourceDate = date;
+                _dbContext.Baobeis.Add(bb);
+            }
+            _dbContext.Files.Add(new File()
+            {
+                Date = date,
+                FileName = fileName,
+                FileType = FileTypeEnum.Baobei.ToString()
+            });
+            await _dbContext.SaveChangesAsync();
+        }
+
+        public async Task DeleteDataFromBaobeiTableAsync(DateTime date, int fileId)
+        {
+            var baobeis = _dbContext.Baobeis.Where(p => p.OriginSourceDate == date).ToList();
+            foreach (var bb in baobeis)
+            {
+                _dbContext.Baobeis.Remove(bb);
+            }
+            var file = _dbContext.Files.FirstOrDefault(p => p.Id == fileId);
+            _dbContext.Files.Remove(file);
+            await _dbContext.SaveChangesAsync();
+        }
+        #endregion
     }
 }
