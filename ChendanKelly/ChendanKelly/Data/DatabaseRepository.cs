@@ -20,6 +20,12 @@ namespace ChendanKelly.Data
         Task InsertDataToBaobeiTableAsync(List<Baobei> newOrders, DateTime date,
             string fileName);
         Task DeleteDataFromBaobeiTableAsync(DateTime date, int fileId);
+
+
+        Task<List<Fee>> GetFeesAsync(string date);
+        Task InsertDataToFeeTableAsync(List<Fee> newFees, DateTime date,
+            string fileName);
+        Task DeleteDataFromFeeTableAsync(DateTime date, int fileId);
     }
 
     public class DatabaseRepository : IDatabaseRepository
@@ -105,6 +111,44 @@ namespace ChendanKelly.Data
             foreach (var bb in baobeis)
             {
                 _dbContext.Baobeis.Remove(bb);
+            }
+            var file = _dbContext.Files.FirstOrDefault(p => p.Id == fileId);
+            _dbContext.Files.Remove(file);
+            await _dbContext.SaveChangesAsync();
+        }
+        #endregion
+
+
+        #region Fee
+        public async Task<List<Fee>> GetFeesAsync(string date)
+        {
+            var fees = await _dbContext.Fees.Where(p => p.OriginSourceDate != null &&
+                p.OriginSourceDate.Value.Date == Convert.ToDateTime(date)).ToListAsync();
+            return fees;
+        }
+
+        public async Task InsertDataToFeeTableAsync(List<Fee> newFees, DateTime date, string fileName)
+        {
+            foreach (var bb in newFees)
+            {
+                bb.OriginSourceDate = date;
+                _dbContext.Fees.Add(bb);
+            }
+            _dbContext.Files.Add(new File()
+            {
+                Date = date,
+                FileName = fileName,
+                FileType = FileTypeEnum.Fee.ToString()
+            });
+            await _dbContext.SaveChangesAsync();
+        }
+
+        public async Task DeleteDataFromFeeTableAsync(DateTime date, int fileId)
+        {
+            var fees = _dbContext.Fees.Where(p => p.OriginSourceDate == date).ToList();
+            foreach (var fee in fees)
+            {
+                _dbContext.Fees.Remove(fee);
             }
             var file = _dbContext.Files.FirstOrDefault(p => p.Id == fileId);
             _dbContext.Files.Remove(file);

@@ -50,7 +50,8 @@
     var fileGridOptions = {
         columnDefs: fileGridColumnDefs,
         rowSelection: 'single',
-        onSelectionChanged: onFileGridSelectionChanged
+        onSelectionChanged: onFileGridSelectionChanged,
+        enableSorting: true
         //rowData: fileRowData
     };
     var fileGrid = document.querySelector('#fileGrid');
@@ -60,7 +61,8 @@
 
     var datasourceGridOptions = {
         rowSelection: 'single',
-        columnDefs: []
+        columnDefs: [],
+        enableSorting: true
     };
     var datasourceGrid = document.querySelector('#datasourceGrid');
     new agGrid.Grid(datasourceGrid, datasourceGridOptions);
@@ -73,7 +75,8 @@
             var fileJson = csvJSON(reader.result);
             let orderId = fileJson[0]["订单编号"] == undefined ? fileJson[0]["\"订单编号\""] : fileJson[0]["订单编号"];
             let baobeiId = fileJson[0]["外部系统编号"] == undefined ? fileJson[0]["\"外部系统编号\""] : fileJson[0]["外部系统编号"];
-            if (fileJson.length > 0 && orderId !== undefined && baobeiId === undefined) {
+            let partnerOrderId = fileJson[0]["Partner_transaction_id"] == undefined ? fileJson[0]["\"Partner_transaction_id\""] : fileJson[0]["Partner_transaction_id"];
+            if (fileJson.length > 0 && orderId !== undefined && baobeiId === undefined && partnerOrderId === undefined) {
                 let newOrders = [];
                 for (let i = 0; i < fileJson.length; i++) {
                     let orderId = fileJson[i]["订单编号"] == undefined ? fileJson[i]["\"订单编号\""] : fileJson[i]["订单编号"];
@@ -86,6 +89,7 @@
                 uploadOrder($('#file-date-picker')[0].value, newOrders, file.name);
             }
             else if (fileJson.length > 0 && orderId !== undefined && baobeiId !== undefined) {
+                debugger;
                 let newBaobeis = [];
                 for (let i = 0; i < fileJson.length; i++) {
                     let orderId = fileJson[i]["订单编号"] == undefined ? fileJson[i]["\"订单编号\""] : fileJson[i]["订单编号"];
@@ -100,6 +104,21 @@
                     });
                 }
                 uploadBaobei($('#file-date-picker')[0].value, newBaobeis, file.name);
+            }
+            else if (fileJson.length > 0 && partnerOrderId !== undefined) {
+                debugger;
+                let newFees = [];
+                for (let i = 0; i < fileJson.length; i++) {
+                    let partnerOrderId = fileJson[i]["Partner_transaction_id"];
+                    let feeType = fileJson[i]["Fee_type"];
+                    let feeAmount = fileJson[i]["Fee_amount"];
+                    newFees.push({
+                        partnerOrderId,
+                        feeType,
+                        feeAmount
+                    });
+                }
+                uploadFee($('#file-date-picker')[0].value, newFees, file.name);
             }
         };
         reader.readAsText(file, 'utf-8');
@@ -160,6 +179,23 @@
                     });
                     break;
                 case 'Fee':
+                    datasourceGridOptions.api.setColumnDefs([
+                        {
+                            headerName: "订单编号", field: "partnerOrderId"
+                        },
+                        {
+                            headerName: "Fee Type", field: "feeType"
+                        },
+                        {
+                            headerName: "Fee Amount", field: "feeAmount"
+                        }
+                    ]);
+                    agGrid.simpleHttpRequest({ url: '/DataSource/GetFees?date=' + selectionRow.date }).then(function (data) {
+                        debugger;
+                        datasourceGridOptions.api.setRowData(data);
+                    });
+                    break;
+                case 'Price':
                     break;
             }
         }
@@ -168,6 +204,21 @@
             ]);
             datasourceGridOptions.api.setRowData([]);
         }
+    }
+
+    function uploadFee(date, jsonValue, fileName) {
+        fetch('/DataSource/InsertDataToFeeTable', {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ date, newFees: jsonValue, fileName })
+        }).then(e => {
+            if (e.status === 200) {
+                refreshFileGrid();
+            }
+        });
     }
 
     function uploadBaobei(date, jsonValue, fileName) {
@@ -193,6 +244,9 @@
             }
             else if (selectionRow.fileType == 'Baobei') {
                 fetchUrl = fetchUrl + 'DeleteDataFromBaobeiTableAsync';
+            }
+            else if (selectionRow.fileType == 'Fee') {
+                fetchUrl = fetchUrl + 'DeleteDataFromFeeTableAsync';
             }
             fetch(fetchUrl, {
                 method: 'POST',

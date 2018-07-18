@@ -73,5 +73,29 @@ namespace ChendanKelly.Controllers
             await _dbRepo.DeleteDataFromBaobeiTableAsync(model.Date, model.Id);
         }
         #endregion
+
+
+        #region Fee
+        [Route("[action]")]
+        [HttpGet]
+        public async Task<List<Fee>> GetFees(string date)
+        {
+            return await _dbRepo.GetFeesAsync(date);
+        }
+
+        [Route("[action]")]
+        [HttpPost]
+        public async Task InsertDataToFeeTable([FromBody]InsertDataToFeeTableViewModel model)
+        {
+            await _dbRepo.InsertDataToFeeTableAsync(model.NewFees, model.Date, model.FileName);
+        }
+
+        [Route("[action]")]
+        [HttpPost]
+        public async Task DeleteDataFromFeeTableAsync([FromBody]File model)
+        {
+            await _dbRepo.DeleteDataFromFeeTableAsync(model.Date, model.Id);
+        }
+        #endregion
     }
 }

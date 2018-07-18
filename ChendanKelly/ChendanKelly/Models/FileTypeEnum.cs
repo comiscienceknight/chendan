@@ -9,6 +9,7 @@ namespace ChendanKelly.Models
     {
         Baobei,
         Order,
-        Fee
+        Fee,
+        Price
     }
 }
