@@ -76,6 +76,8 @@
             let orderId = fileJson[0]["订单编号"] == undefined ? fileJson[0]["\"订单编号\""] : fileJson[0]["订单编号"];
             let baobeiId = fileJson[0]["外部系统编号"] == undefined ? fileJson[0]["\"外部系统编号\""] : fileJson[0]["外部系统编号"];
             let partnerOrderId = fileJson[0]["Partner_transaction_id"] == undefined ? fileJson[0]["\"Partner_transaction_id\""] : fileJson[0]["Partner_transaction_id"];
+            let priceBaobeiId = fileJson[0]["BaobeiId"];
+            debugger;
             if (fileJson.length > 0 && orderId !== undefined && baobeiId === undefined && partnerOrderId === undefined) {
                 let newOrders = [];
                 for (let i = 0; i < fileJson.length; i++) {
@@ -119,6 +121,26 @@
                     });
                 }
                 uploadFee($('#file-date-picker')[0].value, newFees, file.name);
+            }
+            else if (fileJson.length > 0 && priceBaobeiId != undefined) {
+                let newPrices = [];
+                debugger;
+                for (let i = 0; i < fileJson.length; i++) {
+                    let baobeiId = fileJson[i]["BaobeiId"];
+                    let baobeiTitle = fileJson[i]["BaobeiTitle"];
+                    let unitPriceInEuro = fileJson[i]["UnitPriceInEuro"];
+                    if (unitPriceInEuro !== undefined)
+                        unitPriceInEuro = parseFloat(unitPriceInEuro);
+                    newPrices.push({
+                        baobeiId,
+                        baobeiTitle,
+                        unitPriceInEuro
+                    });
+                }
+                uploadPrice($('#file-date-picker')[0].value, newPrices, file.name);
+            }
+            else {
+                alert('这个文件不能被识别');
             }
         };
         reader.readAsText(file, 'utf-8');
@@ -196,6 +218,21 @@
                     });
                     break;
                 case 'Price':
+                    datasourceGridOptions.api.setColumnDefs([
+                        {
+                            headerName: "宝贝编号", field: "baobeiId"
+                        },
+                        {
+                            headerName: "宝贝标题", field: "baobeiTitle"
+                        },
+                        {
+                            headerName: "宝贝单价", field: "unitPriceInEuro"
+                        }
+                    ]);
+                    agGrid.simpleHttpRequest({ url: '/DataSource/GetPrices?date=' + selectionRow.date }).then(function (data) {
+                        debugger;
+                        datasourceGridOptions.api.setRowData(data);
+                    });
                     break;
             }
         }
@@ -218,6 +255,27 @@
             if (e.status === 200) {
                 refreshFileGrid();
             }
+            else {
+                alert('上传文件失败');
+            }
+        });
+    }
+
+    function uploadPrice(date, jsonValue, fileName) {
+        fetch('/DataSource/InsertDataToPriceTable', {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ date, newPrices: jsonValue, fileName })
+        }).then(e => {
+            if (e.status === 200) {
+                refreshFileGrid();
+            }
+            else {
+                alert('上传文件失败');
+            }
         });
     }
 
@@ -232,6 +290,9 @@
         }).then(e => {
             if (e.status === 200) {
                 refreshFileGrid();
+            }
+            else {
+                alert('上传文件失败');
             }
         });
     }
@@ -248,6 +309,9 @@
             else if (selectionRow.fileType == 'Fee') {
                 fetchUrl = fetchUrl + 'DeleteDataFromFeeTableAsync';
             }
+            else if (selectionRow.fileType == 'Price') {
+                fetchUrl = fetchUrl + 'DeleteDataFromPriceTableAsync';
+            }
             fetch(fetchUrl, {
                 method: 'POST',
                 headers: {
@@ -261,6 +325,9 @@
                     refreshFileGrid();
                     selectionRow = null;
                     refreshDatasourceGrid();
+                }
+                else {
+                    alert('删除数据失败');
                 }
             });
         }
@@ -281,6 +348,9 @@
         }).then(e => {
             if (e.status === 200) {
                 refreshFileGrid();
+            }
+            else {
+                alert('上传文件失败');
             }
         });;
     }

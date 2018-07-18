@@ -26,6 +26,11 @@ namespace ChendanKelly.Data
         Task InsertDataToFeeTableAsync(List<Fee> newFees, DateTime date,
             string fileName);
         Task DeleteDataFromFeeTableAsync(DateTime date, int fileId);
+
+        Task<List<Price>> GetPricesAsync(string date);
+        Task InsertDataToPriceTableAsync(List<Price> newPrices, DateTime date,
+            string fileName);
+        Task DeleteDataFromPriceTableAsync(DateTime date, int fileId);
     }
 
     public class DatabaseRepository : IDatabaseRepository
@@ -149,6 +154,58 @@ namespace ChendanKelly.Data
             foreach (var fee in fees)
             {
                 _dbContext.Fees.Remove(fee);
+            }
+            var file = _dbContext.Files.FirstOrDefault(p => p.Id == fileId);
+            _dbContext.Files.Remove(file);
+            await _dbContext.SaveChangesAsync();
+        }
+        #endregion
+
+
+        #region
+        public async Task<List<Price>> GetPricesAsync(string date)
+        {
+            try
+            {
+                var prices = await _dbContext.Prices.Where(p => p.OriginSourceDate != null &&
+                    p.OriginSourceDate.Value.Date == Convert.ToDateTime(date)).ToListAsync();
+                return prices;
+            }
+            catch(Exception exp)
+            {
+                return new List<Price>();
+            }
+        }
+
+        public async Task InsertDataToPriceTableAsync(List<Price> newPrices, DateTime date, string fileName)
+        {
+            foreach (var price in newPrices)
+            {
+                try
+                {
+                    price.OriginSourceDate = date;
+                    _dbContext.Prices.Add(price);
+                }
+                catch (Exception exp)
+                {
+
+                }
+            }
+            _dbContext.Files.Add(new File()
+            {
+                Date = date,
+                FileName = fileName,
+                FileType = FileTypeEnum.Price.ToString()
+            });
+            await _dbContext.SaveChangesAsync();
+        }
+
+        public async Task DeleteDataFromPriceTableAsync(DateTime date, int fileId)
+        {
+            var prices = _dbContext.Prices.Where(p => p.OriginSourceDate == date).ToList();
+            foreach (var price in prices)
+            {
+                _dbContext.Prices.Remove(price);
             }
             var file = _dbContext.Files.FirstOrDefault(p => p.Id == fileId);
             _dbContext.Files.Remove(file);
