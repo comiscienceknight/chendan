@@ -121,5 +121,8 @@ namespace ChendanKelly.Controllers
             await _dbRepo.DeleteDataFromPriceTableAsync(model.Date, model.Id);
         }
         #endregion
+
+
+
     }
 }

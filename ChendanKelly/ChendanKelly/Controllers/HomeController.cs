@@ -5,11 +5,19 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using ChendanKelly.Models;
+using ChendanKelly.Data;
 
 namespace ChendanKelly.Controllers
 {
     public class HomeController : Controller
     {
+        public IDatabaseRepository _dbRepo;
+
+        public HomeController(IDatabaseRepository dbRepo)
+        {
+            _dbRepo = dbRepo;
+        }
+
         public IActionResult Index()
         {
             return View();
@@ -22,8 +30,9 @@ namespace ChendanKelly.Controllers
             return View();
         }
 
-        public IActionResult DataSource()
+        public IActionResult DataSource(sd)
         {
+            _dbRepo.GetResultAsync()
             return View();
         }
 

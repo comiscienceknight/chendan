@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
+using System.Dynamic;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -10,6 +11,7 @@ namespace ChendanKelly.Data
     public interface IDatabaseRepository
     {
         Task<List<File>> GetAllFilesAsync();
+        Task GetResultAsync(DateTime date);
 
         Task<List<Order>> GetOrdersAsync(string date);
         Task InsertDataToOrderTableAsync(List<Order> newOrders, DateTime date,
@@ -44,6 +46,22 @@ namespace ChendanKelly.Data
         public async Task<List<File>> GetAllFilesAsync()
         {
             return await _dbContext.Files.ToListAsync();
+        }
+
+        public async Task GetResultAsync(DateTime date)
+        {
+            var baobeiAndPriceQuery = from b in _dbContext.Baobeis
+                     join p in _dbContext.Prices
+                     on b.BaobeiExternalId equals p.BaobeiId
+                     where b.OriginSourceDate != null && b.OriginSourceDate.Value.Date == date.Date
+                     select new {
+                         BaobeiId = b.BaobeiExternalId,
+                         Quantity = b.Quantity,
+                         UnitPrice = p.UnitPriceInEuro
+                     };
+            var baobeiAndPriceArray = await baobeiAndPriceQuery.ToListAsync();
+            var baobeiAndPriceGroups = baobeiAndPriceArray.GroupBy(p => p.BaobeiId);
+           
         }
 
 

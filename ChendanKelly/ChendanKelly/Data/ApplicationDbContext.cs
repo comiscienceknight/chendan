@@ -17,8 +17,7 @@ namespace ChendanKelly.Data
         //{
         //    base.OnModelCreating(builder);
         //}
-
-        public DbSet<BaobeiDailyPrice> BaobeiDailyPrices { get; set; }
+        
         public DbSet<Baobei> Baobeis { get; set; }
         public DbSet<Fee> Fees { get; set; }
         public DbSet<Order> Orders { get; set; }
