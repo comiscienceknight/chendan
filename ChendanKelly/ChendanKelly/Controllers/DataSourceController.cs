@@ -26,7 +26,13 @@ namespace ChendanKelly.Controllers
             return await _dbRepo.GetAllFilesAsync();
         }
 
-        
+        [Route("[action]")]
+        [HttpGet]
+        public async Task<ResultViewModel> GetResult()
+        {
+            return await _dbRepo.GetResultAsync(Convert.ToDateTime("2018-07-18"));
+        }
+
         #region orders
         [Route("[action]")]
         [HttpGet]

@@ -30,14 +30,14 @@ namespace ChendanKelly.Controllers
             return View();
         }
 
-        public IActionResult DataSource(sd)
+        public IActionResult DataSource()
         {
-            _dbRepo.GetResultAsync()
             return View();
         }
 
-        public IActionResult Results()
+        public async Task<IActionResult> Results()
         {
+            await _dbRepo.GetResultAsync(Convert.ToDateTime("2018-07-18"));
             return View();
         }
 

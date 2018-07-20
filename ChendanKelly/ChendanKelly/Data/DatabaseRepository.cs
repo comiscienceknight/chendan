@@ -11,7 +11,7 @@ namespace ChendanKelly.Data
     public interface IDatabaseRepository
     {
         Task<List<File>> GetAllFilesAsync();
-        Task GetResultAsync(DateTime date);
+        Task<ResultViewModel> GetResultAsync(DateTime date);
 
         Task<List<Order>> GetOrdersAsync(string date);
         Task InsertDataToOrderTableAsync(List<Order> newOrders, DateTime date,
@@ -48,20 +48,95 @@ namespace ChendanKelly.Data
             return await _dbContext.Files.ToListAsync();
         }
 
-        public async Task GetResultAsync(DateTime date)
+        public async Task<ResultViewModel> GetResultAsync(DateTime date)
         {
+            var result = new ResultViewModel();
             var baobeiAndPriceQuery = from b in _dbContext.Baobeis
-                     join p in _dbContext.Prices
-                     on b.BaobeiExternalId equals p.BaobeiId
-                     where b.OriginSourceDate != null && b.OriginSourceDate.Value.Date == date.Date
-                     select new {
-                         BaobeiId = b.BaobeiExternalId,
-                         Quantity = b.Quantity,
-                         UnitPrice = p.UnitPriceInEuro
-                     };
+                                      join p in _dbContext.Prices
+                                      on b.BaobeiExternalId equals p.BaobeiId
+                                      where b.OriginSourceDate != null && b.OriginSourceDate.Value.Date == date.Date
+                                      select new {
+                                          BaobeiId = b.BaobeiExternalId,
+                                          Quantity = b.Quantity,
+                                          UnitPrice = p.UnitPriceInEuro,
+                                          BaobeiTitle = b.BaobeiTitle,
+                                          OrderId = b.OrderId
+                                      };
             var baobeiAndPriceArray = await baobeiAndPriceQuery.ToListAsync();
             var baobeiAndPriceGroups = baobeiAndPriceArray.GroupBy(p => p.BaobeiId);
-           
+            result.BaobeiTotalResults = new List<BaobeiResultViewModel>();
+            foreach (var item in baobeiAndPriceGroups)
+            {
+                result.BaobeiTotalResults.Add(new BaobeiResultViewModel
+                {
+                    BaobeiId = item.Key,
+                    Quantity = item.Sum(p => p.Quantity),
+                    BaobeiTitle = item.First().BaobeiTitle,
+                    Amount = 0
+                });
+            }
+            var relatedPrices = _dbContext.Prices.Where(p => result.BaobeiTotalResults.Any(pp=>pp.BaobeiId == p.BaobeiId));
+            foreach (var item in result.BaobeiTotalResults)
+            {
+                var price = relatedPrices.FirstOrDefault(p => p.BaobeiId == item.BaobeiId);
+                if (price != null)
+                    item.Amount = item.Quantity * (price.UnitPriceInEuro ?? 0);
+            }
+
+            // Set transaction datas
+            var orders = _dbContext.Orders.Where(p => p.OriginSourceDate != null && p.OriginSourceDate.Value.Date == date.Date).ToList();
+            result.Transactions = new List<TransactionResult>();
+            foreach (var order in orders)
+            {
+                result.Transactions.Add(new TransactionResult
+                {
+                    OrderId = order.OrderId,
+                    BaobeiResults = new List<BaobeiResultViewModel>(),
+                    FeeResults = new List<FeeResultPerTransaction>()
+                });
+            }
+            // Get all baobei records of a transaction
+            foreach (var baobei in baobeiAndPriceQuery)
+            {
+                var transaction = result.Transactions.FirstOrDefault(p => p.OrderId == baobei.OrderId);
+                if (transaction == null)
+                    transaction = AddNewEmptyTransaction(result, baobei.OrderId);
+                var price = relatedPrices.FirstOrDefault(p => p.BaobeiId == baobei.BaobeiId);
+                transaction.BaobeiResults.Add(new BaobeiResultViewModel
+                {
+                    BaobeiId = baobei.BaobeiId,
+                    BaobeiTitle = baobei.BaobeiTitle,
+                    Quantity = baobei.Quantity,
+                    Amount = (price == null ? 0 : ((price.UnitPriceInEuro ?? 0) * baobei.Quantity))
+                });
+            }
+            // Get all fees of a transaction
+            var fees = _dbContext.Fees.Where(p => p.OriginSourceDate != null && p.OriginSourceDate.Value.Date == date.Date).ToList();
+            foreach (var fee in fees)
+            {
+                var transaction = result.Transactions.FirstOrDefault(p => p.OrderId == fee.PartnerOrderId);
+                if (transaction == null)
+                    transaction = AddNewEmptyTransaction(result, fee.PartnerOrderId);
+                transaction.FeeResults.Add(new FeeResultPerTransaction
+                {
+                    FeeAmount = fee.FeeAmount ?? 0,
+                    FeeType = fee.FeeType
+                });
+            }
+
+            return result;
+        }
+
+        private static TransactionResult AddNewEmptyTransaction(ResultViewModel result, string orderId)
+        {
+            TransactionResult transaction = new TransactionResult
+            {
+                OrderId = orderId,
+                BaobeiResults = new List<BaobeiResultViewModel>(),
+                FeeResults = new List<FeeResultPerTransaction>()
+            };
+            result.Transactions.Add(transaction);
+            return transaction;
         }
 
 
