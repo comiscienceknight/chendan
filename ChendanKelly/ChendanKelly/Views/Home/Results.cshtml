@@ -1,0 +1,100 @@
+﻿@{
+    ViewData["Title"] = "Data Source";
+}
+
+
+<div class="row" id="datasource">
+    <div class="col-lg-12" style="padding:5px;">
+        <input type="date" id="date-picker" name="trip"
+               onchange="datePickerChange()"
+               min="2018-01-01" max="2028-12-31" />
+        <h2 id="loading">正在计算数据... 如果数据多可能会需要等待几十秒</h2>
+        <div id="result-table">
+
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.8.0/xlsx.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.8.0/jszip.js"></script>
+
+<script type="text/javascript" charset="utf-8">
+    $(document).ready(function () {
+        $('#date-picker').val(formatDate(new Date()));
+        getResultByDate($('#date-picker')[0].value);
+    });
+
+    function datePickerChange() {
+        getResultByDate($('#date-picker')[0].value);
+    }
+
+    function getResultByDate(date) {
+        $('#loading')[0].style.display = 'initial';
+        $('#result-table')[0].innerHtml = '';
+        fetch('/DataSource/GetResult/' + date, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            }
+        }).then(e => {
+            $('#loading')[0].style.display = 'none';
+            if (e.status === 200) {
+                return e.json()
+            }
+            else {
+                return undefined;
+            }
+            }).then(body => {
+                $('#result-table')[0].innerHTML = JSON.stringify(body);
+                composeHtml(body);
+            }).catch(e => {
+                $('#loading')[0].style.display = 'none';
+            });
+    }
+
+    function composeHtml(dataSource) {
+        var table = document.createElement('table');
+        composeLayout(table, dataSource);
+        baobeiTotalResults(table, dataSource.baobeiTotalResults);
+        for (var i = 1; i < 4; i++) {
+
+
+
+        }
+        document.body.appendChild(table);
+    }
+    function composeLayout(table, dataSource) {
+        var tr = document.createElement('tr');
+
+        var td1 = document.createElement('td');
+        var td2 = document.createElement('td');
+
+        var text1 = document.createTextNode('Text1');
+        var text2 = document.createTextNode('Text2');
+
+        td1.appendChild(text1);
+        td2.appendChild(text2);
+        tr.appendChild(td1);
+        tr.appendChild(td2);
+
+        table.appendChild(tr);
+    }
+    function composeBaobeiTotalResults(table, baobeiTotalResults) {
+
+
+    }
+    
+    function formatDate(date) {
+        var d = new Date(date),
+            month = '' + (d.getMonth() + 1),
+            day = '' + d.getDate(),
+            year = d.getFullYear();
+
+        if (month.length < 2) month = '0' + month;
+        if (day.length < 2) day = '0' + day;
+
+        return [year, month, day].join('-');
+    }
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.8.0/jszip.js"></script>

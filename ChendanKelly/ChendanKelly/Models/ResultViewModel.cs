@@ -9,8 +9,9 @@ namespace ChendanKelly.Models
     {
         public List<BaobeiResultViewModel> BaobeiTotalResults { get; set; }
         public List<TransactionResult> Transactions { get; set; }
+        public List<string> FeeTypes { get; set; }
     }
-
+    
     public class TransactionResult
     {
         public string OrderId { get; set; }

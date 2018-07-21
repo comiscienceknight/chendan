@@ -37,7 +37,6 @@ namespace ChendanKelly.Controllers
 
         public async Task<IActionResult> Results()
         {
-            await _dbRepo.GetResultAsync(Convert.ToDateTime("2018-07-18"));
             return View();
         }
 

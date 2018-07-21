@@ -124,6 +124,9 @@ namespace ChendanKelly.Data
                 });
             }
 
+            // FeeTypes list
+            result.FeeTypes = new List<string>();
+
             return result;
         }
 
