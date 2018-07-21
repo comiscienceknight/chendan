@@ -112,6 +112,9 @@ namespace ChendanKelly.Data
             }
             // Get all fees of a transaction
             var fees = _dbContext.Fees.Where(p => p.OriginSourceDate != null && p.OriginSourceDate.Value.Date == date.Date).ToList();
+            for(int i=0;i<fees.Count;i++)
+                if (fees[i].FeeType != null && fees[i].FeeType.Contains("Taobaoke"))
+                    fees[i].FeeType = "Taobaoke";
             foreach (var fee in fees)
             {
                 var transaction = result.Transactions.FirstOrDefault(p => p.OrderId == fee.PartnerOrderId);
@@ -125,7 +128,7 @@ namespace ChendanKelly.Data
             }
 
             // FeeTypes list
-            result.FeeTypes = new List<string>();
+            result.FeeTypes = fees.Select(p => p.FeeType).Distinct().ToList();
 
             return result;
         }

@@ -2,6 +2,14 @@
     ViewData["Title"] = "Data Source";
 }
 
+<style>
+    table, td {
+        border: 1px solid black;
+    }
+    tr {
+        border: 1px solid black;
+    }
+</style>
 
 <div class="row" id="datasource">
     <div class="col-lg-12" style="padding:5px;">
@@ -9,7 +17,7 @@
                onchange="datePickerChange()"
                min="2018-01-01" max="2028-12-31" />
         <h2 id="loading">正在计算数据... 如果数据多可能会需要等待几十秒</h2>
-        <div id="result-table">
+        <div id="result-table" style="margin-top:10px;">
 
         </div>
     </div>
@@ -45,44 +53,80 @@
             else {
                 return undefined;
             }
-            }).then(body => {
-                $('#result-table')[0].innerHTML = JSON.stringify(body);
-                composeHtml(body);
-            }).catch(e => {
-                $('#loading')[0].style.display = 'none';
-            });
+        }).then(body => {
+            //$('#result-table')[0].innerHTML = JSON.stringify(body);
+            composeHtml(body);
+        });
+            //.catch(e => {
+            //    $('#loading')[0].style.display = 'none';
+            //});
     }
 
     function composeHtml(dataSource) {
         var table = document.createElement('table');
-        composeLayout(table, dataSource);
-        baobeiTotalResults(table, dataSource.baobeiTotalResults);
-        for (var i = 1; i < 4; i++) {
+        composeFirst3Lines(table, dataSource);
+        //baobeiTotalResults(table, dataSource.baobeiTotalResults);
+        document.getElementById('result-table').innerHTML = '';
+        document.getElementById('result-table').appendChild(table);
+    }
+    function composeFirst3Lines(table, dataSource) {
+        var trFirstRow = document.createElement('tr');
+        var trSecondRow = document.createElement('tr');
+        var trThirdRow = document.createElement('tr');
 
-
-
+        let td1_0 = document.createElement('td');
+        td1_0.colSpan = dataSource.feeTypes.length + 2;
+        trFirstRow.appendChild(td1_0);
+        let td2_0 = document.createElement('td');
+        td2_0.colSpan = dataSource.feeTypes.length + 2;
+        trSecondRow.appendChild(td2_0);
+        for (let i = 0; i < dataSource.feeTypes.length + 2; i++) {
+            if (i >= 2) {
+                let feeType = dataSource.feeTypes[i-2];
+                let td3 = document.createElement('td');
+                td3.innerText = feeType;
+                td3.style.width = '180px';
+                trThirdRow.appendChild(td3);
+            }
+            else{
+                let td3 = document.createElement('td');
+                if (i === 0)
+                    td3.innerText = '订单编号';
+                else
+                    td3.innerText = '已收款';
+                trThirdRow.appendChild(td3);
+            }
         }
-        document.body.appendChild(table);
-    }
-    function composeLayout(table, dataSource) {
-        var tr = document.createElement('tr');
+        for (let i = 0; i < dataSource.baobeiTotalResults.length; i++) {
+            let btr = dataSource.baobeiTotalResults[i];
+            let td = document.createElement('td');
+            td.colSpan = 2;
+            td.innerText = btr.baobeiId + ' - ' + btr.baobeiTitle;
+            td.style.width = '250px';
+            trFirstRow.appendChild(td);
 
-        var td1 = document.createElement('td');
-        var td2 = document.createElement('td');
+            let td2_1 = document.createElement('td');
+            td2_1.innerText = '总数量';
+            td2_1.style.width = '120px';
+            trSecondRow.appendChild(td2_1);
+            let td2_2 = document.createElement('td');
+            td2_2.innerText = '当天单价';
+            td2_2.style.width = '130px';
+            trSecondRow.appendChild(td2_2);
 
-        var text1 = document.createTextNode('Text1');
-        var text2 = document.createTextNode('Text2');
+            let td3_1 = document.createElement('td');
+            td3_1.innerText = btr.quantity;
+            td3_1.style.width = '120px';
+            trThirdRow.appendChild(td3_1);
+            let td3_2 = document.createElement('td');
+            td3_2.innerText = btr.amount;
+            td3_2.style.width = '130px';
+            trThirdRow.appendChild(td3_2);
+        }
 
-        td1.appendChild(text1);
-        td2.appendChild(text2);
-        tr.appendChild(td1);
-        tr.appendChild(td2);
-
-        table.appendChild(tr);
-    }
-    function composeBaobeiTotalResults(table, baobeiTotalResults) {
-
-
+        table.appendChild(trFirstRow);
+        table.appendChild(trSecondRow);
+        table.appendChild(trThirdRow);
     }
     
     function formatDate(date) {
