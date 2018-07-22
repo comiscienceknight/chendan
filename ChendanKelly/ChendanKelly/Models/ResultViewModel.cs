@@ -15,6 +15,8 @@ namespace ChendanKelly.Models
     public class TransactionResult
     {
         public string OrderId { get; set; }
+        public string SellPrice { get; set; }
+        public string Settle { get; set; }
         public List<FeeResultPerTransaction> FeeResults { get; set; }
         public List<BaobeiResultViewModel> BaobeiResults { get; set; }
     }

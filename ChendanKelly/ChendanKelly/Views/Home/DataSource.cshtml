@@ -282,10 +282,10 @@
                             if (settleAmount != undefined && settleAmount !== null)
                                 settleAmount = settleAmount.trim()
                             newSettles.push({
-                                orderId,
-                                amount,
-                                settleAmount,
-                                settlementTime
+                                orderId: clearSlash(orderId),
+                                amount: clearSlash(amount),
+                                settleAmount: clearSlash(settleAmount),
+                                settlementTime: clearSlash(settlementTime)
                             });
                         }
                         uploadSettle($('#file-date-picker')[0].value, newSettles, file.name);

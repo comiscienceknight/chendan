@@ -64,25 +64,89 @@
 
     function composeHtml(dataSource) {
         var table = document.createElement('table');
-        composeFirst3Lines(table, dataSource);
-        //baobeiTotalResults(table, dataSource.baobeiTotalResults);
+        let baobeiPositions = [], feePositions = [];
+        debugger;
+        composeFirst3Lines(table, dataSource, baobeiPositions, feePositions);
+        debugger;
+        composeTransactions(table, dataSource, baobeiPositions, feePositions);
+
         document.getElementById('result-table').innerHTML = '';
         document.getElementById('result-table').appendChild(table);
     }
-    function composeFirst3Lines(table, dataSource) {
+    function composeCell(td, innerText) {
+        let tdDiv = document.createElement('div');
+        tdDiv.innerText = innerText;
+        tdDiv.style.width = '100px';
+        tdDiv.style.padding = '5px';
+        td.appendChild(tdDiv);
+    }
+    function composeTransactions(table, dataSource, baobeiPositions, feePositions) {
+        let transactions = dataSource.transactions;
+        for (let i = 0; i < transactions.length; i++) {
+            let transc = transactions[i];
+            var row = document.createElement('tr');
+            let td_transactionid = document.createElement('td');
+            composeCell(td_transactionid, transc.orderId);
+            row.appendChild(td_transactionid);
+            let td_settle = document.createElement('td');
+            composeCell(td_settle, transc.settle);
+            row.appendChild(td_settle);
+            let td_sellPrice = document.createElement('td');
+            composeCell(td_sellPrice, transc.sellPrice);
+            row.appendChild(td_sellPrice);
+            
+            for (let j = 0; j < feePositions.length; j++) {
+                let ifMatched = false;
+                for (let k = 0; k < transc.feeResults.length; k++) {
+                    if (feePositions[j] === transc.feeResults[k].feeType) {
+                        let tdFee = document.createElement('td');
+                        composeCell(tdFee, transc.feeResults[k].feeAmount);
+                        row.appendChild(tdFee);
+                        ifMatched = true;
+                        break;
+                    }
+                }
+                if (ifMatched === false) {
+                    row.appendChild(document.createElement('td'));
+                }
+            }
+
+            for (let j = 0; j < baobeiPositions.length; j++) {
+                let ifMatched = false;
+                for (let k = 0; k < transc.baobeiResults.length; k++) {
+                    if (baobeiPositions[j] === transc.baobeiResults[k].baobeiId) {
+                        let tdBaobeiQuantity = document.createElement('td');
+                        composeCell(tdBaobeiQuantity, transc.baobeiResults[k].quantity);
+                        row.appendChild(tdBaobeiQuantity);
+                        let tdBaobeiAmount = document.createElement('td');
+                        composeCell(tdBaobeiAmount, transc.baobeiResults[k].amount);
+                        row.appendChild(tdBaobeiAmount);
+                        ifMatched = true;
+                        break;
+                    }
+                }
+                if (ifMatched === false) {
+                    row.appendChild(document.createElement('td'));
+                    row.appendChild(document.createElement('td'));
+                }
+            }
+            table.appendChild(row);
+        }
+    }
+    function composeFirst3Lines(table, dataSource, baobeiPositions, feePositions) {
         var trFirstRow = document.createElement('tr');
         var trSecondRow = document.createElement('tr');
         var trThirdRow = document.createElement('tr');
 
         let td1_0 = document.createElement('td');
-        td1_0.colSpan = dataSource.feeTypes.length + 2;
+        td1_0.colSpan = dataSource.feeTypes.length + 3;
         trFirstRow.appendChild(td1_0);
         let td2_0 = document.createElement('td');
-        td2_0.colSpan = dataSource.feeTypes.length + 2;
+        td2_0.colSpan = dataSource.feeTypes.length + 3;
         trSecondRow.appendChild(td2_0);
-        for (let i = 0; i < dataSource.feeTypes.length + 2; i++) {
-            if (i >= 2) {
-                let feeType = dataSource.feeTypes[i-2];
+        for (let i = 0; i < dataSource.feeTypes.length + 3; i++) {
+            if (i >= 3) {
+                let feeType = dataSource.feeTypes[i-3];
                 let td3 = document.createElement('td');
                 let td3_innerDiv = document.createElement('div');
                 td3_innerDiv.innerText = feeType;
@@ -90,15 +154,20 @@
                 td3_innerDiv.style.padding = '5px';
                 td3.appendChild(td3_innerDiv);
                 trThirdRow.appendChild(td3);
+                feePositions.push(feeType);
             }
             else{
                 let td3 = document.createElement('td');
                 let td3_innerDiv = document.createElement('div');
-                if (i === 0)
-                    td3_innerDiv.innerText = '订单编号';
-                else
-                    td3_innerDiv.innerText = '已收款';
                 td3_innerDiv.style.width = '100px';
+                if (i === 0) {
+                    td3_innerDiv.innerText = '订单编号';
+                    td3_innerDiv.style.width = '170px';
+                }
+                else if (i === 1)
+                    td3_innerDiv.innerText = '已收款';
+                else
+                    td3_innerDiv.innerText = '总卖价';
                 td3_innerDiv.style.padding = '5px';
                 td3.appendChild(td3_innerDiv);
                 trThirdRow.appendChild(td3);
@@ -106,6 +175,8 @@
         }
         for (let i = 0; i < dataSource.baobeiTotalResults.length; i++) {
             let btr = dataSource.baobeiTotalResults[i];
+            baobeiPositions.push(btr.baobeiId);
+
             let td = document.createElement('td');
             td.colSpan = 2;
             let td_innerDiv = document.createElement('div');
@@ -114,6 +185,9 @@
             td_innerDiv.style.padding = '5px';
             td.appendChild(td_innerDiv);
             trFirstRow.appendChild(td);
+
+
+            baobeiPositions.push[btr.baobeiId];
 
             let td2_1 = document.createElement('td');
             let td2_1_innerDiv = document.createElement('div');
@@ -124,7 +198,7 @@
             trSecondRow.appendChild(td2_1);
             let td2_2 = document.createElement('td');
             let td2_2_innerDiv = document.createElement('div');
-            td2_2_innerDiv.innerText = '当天单价';
+            td2_2_innerDiv.innerText = '产品总价';
             td2_2_innerDiv.style.width = '80px';
             td2_2_innerDiv.style.padding = '5px';
             td2_2.appendChild(td2_2_innerDiv);

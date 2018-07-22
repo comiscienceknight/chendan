@@ -56,45 +56,87 @@ namespace ChendanKelly.Data
         public async Task<ResultViewModel> GetResultAsync(DateTime date)
         {
             var result = new ResultViewModel();
-            var baobeiAndPriceQuery = from b in _dbContext.Baobeis
-                                      join p in _dbContext.Prices
-                                      on b.BaobeiExternalId equals p.BaobeiId
-                                      where b.OriginSourceDate != null && b.OriginSourceDate.Value.Date == date.Date
-                                      select new {
-                                          BaobeiId = b.BaobeiExternalId,
-                                          Quantity = b.Quantity,
-                                          UnitPrice = p.UnitPriceInEuro,
-                                          BaobeiTitle = b.BaobeiTitle,
-                                          OrderId = b.OrderId
-                                      };
-            var baobeiAndPriceArray = await baobeiAndPriceQuery.ToListAsync();
-            var baobeiAndPriceGroups = baobeiAndPriceArray.GroupBy(p => p.BaobeiId);
-            result.BaobeiTotalResults = new List<BaobeiResultViewModel>();
-            foreach (var item in baobeiAndPriceGroups)
-            {
-                result.BaobeiTotalResults.Add(new BaobeiResultViewModel
-                {
-                    BaobeiId = item.Key,
-                    Quantity = item.Sum(p => p.Quantity),
-                    BaobeiTitle = item.First().BaobeiTitle,
-                    Amount = 0
-                });
-            }
-            var relatedPrices = _dbContext.Prices.Where(p => p.OriginSourceDate != null && p.OriginSourceDate.Value.Date == date.Date &&
-                result.BaobeiTotalResults.Any(pp=>pp.BaobeiId == p.BaobeiId)).ToList();
-            foreach (var item in result.BaobeiTotalResults)
-            {
-                var price = relatedPrices.FirstOrDefault(p => p.BaobeiId == item.BaobeiId);
-                if (price != null)
-                    item.Amount = item.Quantity * (price.UnitPriceInEuro ?? 0);
-            }
+            List<Price> relatedPrices = await GetBaobeiTotalResultsAsync(date, result);
 
             result.Transactions = new List<TransactionResult>();
+            await GetTransactionBaobeiInfosAsync(date, result, relatedPrices);
+
+            // Get all fees of a transaction
+            await GetTransactionFeeInfosAsync(date, result);
+            
+            await GetTransactionSettleInfosAsync(date, result);
+
+            return result;
+        }
+
+        private async Task GetTransactionSettleInfosAsync(DateTime date, ResultViewModel result)
+        {
+            var orderSettlesQuery = from o in _dbContext.Orders
+                                 join s in _dbContext.Settles
+                                 on (o.OrderId ?? "").Trim() equals (s.OrderId ?? "").Trim()
+                                 where o.OriginSourceDate != null && o.OriginSourceDate.Value.Date == date.Date &&
+                                    !string.IsNullOrWhiteSpace(o.OrderId)
+                                 select new
+                                 {
+                                     OrderId = o.OrderId,
+                                     SettleAmount = s.SettleAmount ?? 0,
+                                     SellPrice = s.Amount ?? 0
+                                 };
+            var orderSettles = await orderSettlesQuery.ToListAsync();
+            foreach (var settle in orderSettles)
+            {
+                var transaction = result.Transactions.FirstOrDefault(p => p.OrderId == settle.OrderId);
+                if (transaction != null)
+                {
+                    transaction.SellPrice = settle.SellPrice.ToString();
+                    transaction.Settle = settle.SettleAmount.ToString();
+                }
+            }
+        }
+
+        private async Task GetTransactionFeeInfosAsync(DateTime date, ResultViewModel result)
+        {
+            var orderFeesQuery = from o in _dbContext.Orders
+                                 join f in _dbContext.Fees
+                                 on (o.OrderId ?? "").Trim() equals (f.PartnerOrderId ?? "").Trim()
+                                 where o.OriginSourceDate != null && o.OriginSourceDate.Value.Date == date.Date &&
+                                    !string.IsNullOrWhiteSpace(o.OrderId)
+                                 select new
+                                 {
+                                     OrderId = o.OrderId,
+                                     OrderTotalAmout = o.Amount,
+                                     FeeType = (!string.IsNullOrWhiteSpace(f.FeeType) && f.FeeType.Contains("Taobaoke")) ? "Taobaoke" : f.FeeType,
+                                     FeeAmount = f.FeeAmount
+                                 };
+            var orderFees = await orderFeesQuery.ToListAsync();
+            var orderFeeGroups = orderFees.GroupBy(p => p.OrderId).ToList();
+            foreach (var group in orderFeeGroups)
+            {
+                foreach (var item in group)
+                {
+                    var transaction = result.Transactions.FirstOrDefault(p => p.OrderId == group.Key);
+                    if (transaction == null)
+                        transaction = AddNewEmptyTransaction(result, group.Key);
+                    string feeType = item.FeeType;
+                    transaction.FeeResults.Add(new FeeResultPerTransaction
+                    {
+                        FeeAmount = item.FeeAmount ?? 0,
+                        FeeType = feeType
+                    });
+                }
+            }
+
+            result.FeeTypes = orderFees.Select(p => p.FeeType).Distinct().ToList();
+        }
+
+        private async Task GetTransactionBaobeiInfosAsync(DateTime date, ResultViewModel result, List<Price> relatedPrices)
+        {
             var ordersQuery = from o in _dbContext.Orders
                               join b in _dbContext.Baobeis
                               on o.OrderId equals b.OrderId
                               where o.OriginSourceDate != null && o.OriginSourceDate.Value.Date == date.Date
-                              select new {
+                              select new
+                              {
                                   OrderId = o.OrderId,
                                   OrderTotalAmout = o.Amount,
                                   BaobeiId = b.BaobeiExternalId,
@@ -124,63 +166,45 @@ namespace ChendanKelly.Data
                     });
                 }
             }
+        }
 
-            // Get all fees of a transaction
-            var od = _dbContext.Orders.FirstOrDefault(p => p.OrderId == "153690488074991866");
-            var fe = _dbContext.Fees.FirstOrDefault(p => p.PartnerOrderId.Contains("153690488074991866"));
-            var orderFeesQuery = from o in _dbContext.Orders
-                                 join f in _dbContext.Fees
-                                 on (o.OrderId ?? "").Trim() equals (f.PartnerOrderId ?? "").Trim()
-                                 where o.OriginSourceDate != null && o.OriginSourceDate.Value.Date == date.Date &&
-                                    !string.IsNullOrWhiteSpace(o.OrderId)
-                                 select new
-                                 {
-                                     OrderId = o.OrderId,
-                                     OrderTotalAmout = o.Amount,
-                                     FeeType = (!string.IsNullOrWhiteSpace(f.FeeType) && f.FeeType.Contains("Taobaoke")) ? "Taobaoke":f.FeeType,
-                                     FeeAmount = f.FeeAmount
-                                 };
-            var orderFees = await orderFeesQuery.ToListAsync();
-            var orderFeeGroups = orderFees.GroupBy(p => p.OrderId).ToList();
-            foreach(var group in orderFeeGroups)
+        private async Task<List<Price>> GetBaobeiTotalResultsAsync(DateTime date, ResultViewModel result)
+        {
+            var baobeiAndPriceQuery = from b in _dbContext.Baobeis
+                                      join p in _dbContext.Prices
+                                      on b.BaobeiExternalId equals p.BaobeiId
+                                      where b.OriginSourceDate != null && b.OriginSourceDate.Value.Date == date.Date
+                                      select new
+                                      {
+                                          BaobeiId = b.BaobeiExternalId,
+                                          Quantity = b.Quantity,
+                                          UnitPrice = p.UnitPriceInEuro,
+                                          BaobeiTitle = b.BaobeiTitle,
+                                          OrderId = b.OrderId
+                                      };
+            var baobeiAndPriceArray = await baobeiAndPriceQuery.ToListAsync();
+            var baobeiAndPriceGroups = baobeiAndPriceArray.GroupBy(p => p.BaobeiId);
+            result.BaobeiTotalResults = new List<BaobeiResultViewModel>();
+            foreach (var item in baobeiAndPriceGroups)
             {
-                foreach(var item in group)
+                result.BaobeiTotalResults.Add(new BaobeiResultViewModel
                 {
-                    var transaction = result.Transactions.FirstOrDefault(p => p.OrderId == group.Key);
-                    if (transaction == null)
-                        transaction = AddNewEmptyTransaction(result, group.Key);
-                    string feeType = item.FeeType;
-                    //if (!string.IsNullOrWhiteSpace(item.FeeType) && item.FeeType.Contains("Taobaoke"))
-                    //    feeType = "Taobaoke";
-                    transaction.FeeResults.Add(new FeeResultPerTransaction
-                    {
-                        FeeAmount = item.FeeAmount ?? 0,
-                        FeeType = feeType
-                    });
-                }
+                    BaobeiId = item.Key,
+                    Quantity = item.Sum(p => p.Quantity),
+                    BaobeiTitle = item.First().BaobeiTitle,
+                    Amount = 0
+                });
+            }
+            var relatedPrices = _dbContext.Prices.Where(p => p.OriginSourceDate != null && p.OriginSourceDate.Value.Date == date.Date &&
+                result.BaobeiTotalResults.Any(pp => pp.BaobeiId == p.BaobeiId)).ToList();
+            foreach (var item in result.BaobeiTotalResults)
+            {
+                var price = relatedPrices.FirstOrDefault(p => p.BaobeiId == item.BaobeiId);
+                if (price != null)
+                    item.Amount = item.Quantity * (price.UnitPriceInEuro ?? 0);
             }
 
-            //var fees = _dbContext.Fees.Where(p => p.OriginSourceDate != null && p.OriginSourceDate.Value.Date >= date.Date &&
-            //    p.OriginSourceDate.Value.Date < DateTime.UtcNow.AddDays(90).Date).ToList();
-            //for(int i=0;i<fees.Count;i++)
-            //    if (fees[i].FeeType != null && fees[i].FeeType.Contains("Taobaoke"))
-            //        fees[i].FeeType = "Taobaoke";
-            //foreach (var fee in fees)
-            //{
-            //    var transaction = result.Transactions.FirstOrDefault(p => p.OrderId == fee.PartnerOrderId);
-            //    if (transaction == null)
-            //        transaction = AddNewEmptyTransaction(result, fee.PartnerOrderId);
-            //    transaction.FeeResults.Add(new FeeResultPerTransaction
-            //    {
-            //        FeeAmount = fee.FeeAmount ?? 0,
-            //        FeeType = fee.FeeType
-            //    });
-            //}
-
-            // FeeTypes list
-            result.FeeTypes = orderFees.Select(p => p.FeeType).Distinct().ToList();
-
-            return result;
+            return relatedPrices;
         }
 
         private static TransactionResult AddNewEmptyTransaction(ResultViewModel result, string orderId)
