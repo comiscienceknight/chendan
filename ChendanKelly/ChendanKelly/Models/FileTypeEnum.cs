@@ -10,6 +10,7 @@ namespace ChendanKelly.Models
         Baobei,
         Order,
         Fee,
-        Price
+        Price,
+        Settle
     }
 }

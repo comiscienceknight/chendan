@@ -23,5 +23,6 @@ namespace ChendanKelly.Data
         public DbSet<Order> Orders { get; set; }
         public DbSet<File> Files { get; set; }
         public DbSet<Price> Prices { get; set; }
+        public DbSet<Settle> Settles { get; set; }
     }
 }

@@ -130,5 +130,27 @@ namespace ChendanKelly.Controllers
 
 
 
+        #region settes
+        [Route("[action]")]
+        [HttpGet]
+        public async Task<List<Settle>> GetSettles(string date)
+        {
+            return await _dbRepo.GetSettlesAsync(date);
+        }
+
+        [Route("[action]")]
+        [HttpPost]
+        public async Task InsertDataToSettleTable([FromBody]InsertDataToSettleTableViewModel model)
+        {
+            await _dbRepo.InsertDataToSettleTableAsync(model.NewSettles, model.Date, model.FileName);
+        }
+
+        [Route("[action]")]
+        [HttpPost]
+        public async Task DeleteDataFromSettleTableAsync([FromBody]File model)
+        {
+            await _dbRepo.DeleteDataFromSettleTableAsync(model.Date, model.Id);
+        }
+        #endregion
     }
 }

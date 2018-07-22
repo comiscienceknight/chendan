@@ -84,16 +84,23 @@
             if (i >= 2) {
                 let feeType = dataSource.feeTypes[i-2];
                 let td3 = document.createElement('td');
-                td3.innerText = feeType;
-                td3.style.width = '180px';
+                let td3_innerDiv = document.createElement('div');
+                td3_innerDiv.innerText = feeType;
+                td3_innerDiv.style.width = '100px';
+                td3_innerDiv.style.padding = '5px';
+                td3.appendChild(td3_innerDiv);
                 trThirdRow.appendChild(td3);
             }
             else{
                 let td3 = document.createElement('td');
+                let td3_innerDiv = document.createElement('div');
                 if (i === 0)
-                    td3.innerText = '订单编号';
+                    td3_innerDiv.innerText = '订单编号';
                 else
-                    td3.innerText = '已收款';
+                    td3_innerDiv.innerText = '已收款';
+                td3_innerDiv.style.width = '100px';
+                td3_innerDiv.style.padding = '5px';
+                td3.appendChild(td3_innerDiv);
                 trThirdRow.appendChild(td3);
             }
         }
@@ -101,26 +108,41 @@
             let btr = dataSource.baobeiTotalResults[i];
             let td = document.createElement('td');
             td.colSpan = 2;
-            td.innerText = btr.baobeiId + ' - ' + btr.baobeiTitle;
-            td.style.width = '250px';
+            let td_innerDiv = document.createElement('div');
+            td_innerDiv.innerText = btr.baobeiId + ' - ' + btr.baobeiTitle;
+            td_innerDiv.style.width = '160px';
+            td_innerDiv.style.padding = '5px';
+            td.appendChild(td_innerDiv);
             trFirstRow.appendChild(td);
 
             let td2_1 = document.createElement('td');
-            td2_1.innerText = '总数量';
-            td2_1.style.width = '120px';
+            let td2_1_innerDiv = document.createElement('div');
+            td2_1_innerDiv.innerText = '总数量';
+            td2_1_innerDiv.style.width = '80px';
+            td2_1_innerDiv.style.padding = '5px';
+            td2_1.appendChild(td2_1_innerDiv);
             trSecondRow.appendChild(td2_1);
             let td2_2 = document.createElement('td');
-            td2_2.innerText = '当天单价';
-            td2_2.style.width = '130px';
+            let td2_2_innerDiv = document.createElement('div');
+            td2_2_innerDiv.innerText = '当天单价';
+            td2_2_innerDiv.style.width = '80px';
+            td2_2_innerDiv.style.padding = '5px';
+            td2_2.appendChild(td2_2_innerDiv);
             trSecondRow.appendChild(td2_2);
 
             let td3_1 = document.createElement('td');
-            td3_1.innerText = btr.quantity;
-            td3_1.style.width = '120px';
+            let td3_1_innerDiv = document.createElement('div');
+            td3_1_innerDiv.innerText = btr.quantity;
+            td3_1_innerDiv.style.width = '80px';
+            td3_1_innerDiv.style.padding = '5px';
+            td3_1.appendChild(td3_1_innerDiv);
             trThirdRow.appendChild(td3_1);
             let td3_2 = document.createElement('td');
-            td3_2.innerText = btr.amount;
-            td3_2.style.width = '130px';
+            let td3_2_innerDiv = document.createElement('div');
+            td3_2_innerDiv.innerText = btr.amount;
+            td3_2_innerDiv.style.width = '80px';
+            td3_2_innerDiv.style.padding = '5px';
+            td3_2.appendChild(td3_2_innerDiv);
             trThirdRow.appendChild(td3_2);
         }
 

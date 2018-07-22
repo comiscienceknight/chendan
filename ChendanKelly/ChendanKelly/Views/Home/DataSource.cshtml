@@ -2,18 +2,66 @@
     ViewData["Title"] = "Data Source";
 }
 
+<style>
+    .loader-background {
+        width:100%;
+        height: 750px;
+        background-color: #9b99993d;
+        position: relative;
+        padding-top:250px;
+    }
+    .loader {
+        border: 16px solid #f3f3f3; /* Light grey */
+        border-top: 16px solid #3498db; /* Blue */
+        border-radius: 50%;
+        width: 120px;
+        height: 120px;
+        animation: spin 2s linear infinite;
+        margin-left: auto;
+        margin-right: auto;
+    }
+    button {
+        margin-top: 2px;
+    }
 
+@@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+</style>
 <div class="row" id="datasource">
 
     <div class="col-lg-4" style="padding:5px;">
-        <div style="height:50px">
+        <div style="height:90px">
             <label for="start">文件对应的日期</label>
             <input type="date" id="file-date-picker" name="trip"
                    value="2018-07-22"
                    min="2018-01-01" max="2018-12-31" />
-            <input id="file-picker" type="file" value="选择数据文件上传到系统" />
+            <div>
+                <button type="button" class="btn btn-primary btn-sm"
+                        onclick="uploadBaobeiFile()">
+                    +宝贝报表
+                </button>
+                <button type="button" class="btn btn-secondary btn-sm"
+                        onclick="uploadOrderFile()">
+                    +订单报表
+                </button>
+                <button type="button" class="btn btn-success btn-sm"
+                        onclick="uploadFeeFile()">
+                    +费用报表
+                </button>
+                <button type="button" class="btn btn-danger btn-sm"
+                        onclick="uploadShouruFile()">
+                    +收入报表
+                </button>
+                <button type="button" class="btn btn-success btn-sm"
+                        onclick="uploadUnitPriceFile()">
+                    +宝贝单价
+                </button>
+            </div>
+            <input id="file-picker" type="file" style="display:none;" />
         </div>
-        <div >
+        <div>
             <div id="fileGrid" style="height:600px;min-height: 600px;width:100%;margin-top:5px;"
                     class="ag-theme-balham"></div>
         </div>
@@ -22,9 +70,14 @@
     <div class="col-lg-8" style="padding:5px;">
         <div style="height:50px;position:relative;">
             <button style="position:absolute;bottom:0px;" id="delete-selected-items" onclick="deleteSelectedItems()">删除表格中内容</button>
+       
         </div>
-        <div id="datasourceGrid" style="height:600px;min-height: 600px;width:100%;margin-top:5px;"
+        <div id="datasourceGrid" style="height:640px;min-height: 600px;width:100%;margin-top:5px;"
              class="ag-theme-balham"></div>
+    </div>
+
+    <div class="loader-background">
+        <div class="loader"></div>
     </div>
 
 </div>
@@ -33,12 +86,16 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.8.0/jszip.js"></script>
 
 <script type="text/javascript" charset="utf-8">
+    let state = {
+        selectedFileType: '',
+        selectionRow: null
+    }
+
     $(document).ready(function () {
         $('#file-date-picker').val(formatDate(new Date()));
+        loading(false);
     });
-
-    let selectionRow = null;
-
+    
     var fileGridColumnDefs = [
         {
             headerName: "Date", field: "date", width: 90
@@ -68,83 +125,221 @@
     new agGrid.Grid(datasourceGrid, datasourceGridOptions);
     refreshDatasourceGrid();
 
-    $("#file-picker").change(function (e) {
-        let file = e.currentTarget.files[0];
-        var reader = new FileReader();
-        reader.onload = function () {
-            var fileJson = csvJSON(reader.result);
-            let orderId = fileJson[0]["订单编号"] == undefined ? fileJson[0]["\"订单编号\""] : fileJson[0]["订单编号"];
-            let baobeiId = fileJson[0]["外部系统编号"] == undefined ? fileJson[0]["\"外部系统编号\""] : fileJson[0]["外部系统编号"];
-            let partnerOrderId = fileJson[0]["Partner_transaction_id"] == undefined ? fileJson[0]["\"Partner_transaction_id\""] : fileJson[0]["Partner_transaction_id"];
-            let priceBaobeiId = fileJson[0]["BaobeiId"];
-            debugger;
-            if (fileJson.length > 0 && orderId !== undefined && baobeiId === undefined && partnerOrderId === undefined) {
-                let newOrders = [];
-                for (let i = 0; i < fileJson.length; i++) {
-                    let orderId = fileJson[i]["订单编号"] == undefined ? fileJson[i]["\"订单编号\""] : fileJson[i]["订单编号"];
-                    let amount = fileJson[i]["总金额"] == undefined ? fileJson[i]["\"总金额\""] : fileJson[i]["总金额"];
-                    newOrders.push({
-                        orderId: orderId,
-                        amount: amount,
-                    });
+
+
+
+    function clearSlash(text) {
+        if (!((typeof text) == 'string'))
+            return text;
+        if (text === undefined || text === null)
+            return text;
+        if (text.includes('='))
+            text = text.replace('=', '');
+        if (text.includes('\"'))
+            text = text.replace('\"', '');
+        if (text.includes('"'))
+            text = text.replace('"', '');
+        text = text.replace('\t', '').trim();
+        return text;
+    }
+    function uploadBaobeiFile() {
+        state.selectedFileType = 'Baobei';
+        $('#file-picker').click();
+        $("#file-picker").change(function (e) {
+            if (state.selectedFileType === 'Baobei') {
+                state.selectedFileType = '';
+                let file = e.currentTarget.files[0];
+                if (file === undefined) {
+                    return;
                 }
-                uploadOrder($('#file-date-picker')[0].value, newOrders, file.name);
+                var reader = new FileReader();
+                reader.onload = function () {
+                    try {
+                        loading(true);
+                        var fileJson = csvJSON(reader.result);
+                        let newBaobeis = [];
+                        for (let i = 0; i < fileJson.length; i++) {
+                            let orderId = fileJson[i]["订单编号"] == undefined ? fileJson[i]["\"订单编号\""] : fileJson[i]["订单编号"];
+                            let baobeiExternalId = fileJson[i]["外部系统编号"] == undefined ? fileJson[i]["\"外部系统编号\""] : fileJson[i]["外部系统编号"];
+                            let quantity = fileJson[i]["购买数量"] == undefined ? fileJson[i]["\"购买数量\""] : fileJson[i]["购买数量"];
+                            let baobeiTitle = fileJson[i]["标题"] == undefined ? fileJson[i]["\"标题\""] : fileJson[i]["标题"];
+                            newBaobeis.push({
+                                orderId: clearSlash(orderId),
+                                baobeiExternalId: clearSlash(baobeiExternalId),
+                                quantity: clearSlash(quantity),
+                                baobeiTitle: clearSlash(baobeiTitle)
+                            });
+                        }
+                        uploadBaobei($('#file-date-picker')[0].value, newBaobeis, file.name);
+                    }
+                    catch{
+                        alert('上传文件失败');
+                        loading(false);
+                    }
+                };
+                reader.readAsText(file, 'gb2312');
             }
-            else if (fileJson.length > 0 && orderId !== undefined && baobeiId !== undefined) {
-                debugger;
-                let newBaobeis = [];
-                for (let i = 0; i < fileJson.length; i++) {
-                    let orderId = fileJson[i]["订单编号"] == undefined ? fileJson[i]["\"订单编号\""] : fileJson[i]["订单编号"];
-                    let baobeiExternalId = fileJson[i]["外部系统编号"] == undefined ? fileJson[i]["\"外部系统编号\""] : fileJson[i]["外部系统编号"];
-                    let quantity = fileJson[i]["购买数量"] == undefined ? fileJson[i]["\"购买数量\""] : fileJson[i]["购买数量"];
-                    let baobeiTitle = fileJson[i]["标题"] == undefined ? fileJson[i]["\"标题\""] : fileJson[i]["标题"];
-                    newBaobeis.push({
-                        orderId: orderId,
-                        baobeiExternalId,
-                        quantity,
-                        baobeiTitle
-                    });
+        });
+    }
+    function uploadOrderFile() {
+        state.selectedFileType = 'Order';
+        $('#file-picker').click();
+        $("#file-picker").change(function (e) {
+            if (state.selectedFileType === 'Order') {
+                state.selectedFileType = '';
+                let file = e.currentTarget.files[0];
+                if (file === undefined) {
+                    return;
                 }
-                uploadBaobei($('#file-date-picker')[0].value, newBaobeis, file.name);
-            }
-            else if (fileJson.length > 0 && partnerOrderId !== undefined) {
-                debugger;
-                let newFees = [];
-                for (let i = 0; i < fileJson.length; i++) {
-                    let partnerOrderId = fileJson[i]["Partner_transaction_id"];
-                    let feeType = fileJson[i]["Fee_type"];
-                    let feeAmount = fileJson[i]["Fee_amount"];
-                    newFees.push({
-                        partnerOrderId,
-                        feeType,
-                        feeAmount
-                    });
+                var reader = new FileReader();
+                reader.onload = function () {
+                    try {
+                        loading(true);
+                        var fileJson = csvJSON(reader.result);
+                        let newOrders = [];
+                        debugger;
+                        for (let i = 0; i < fileJson.length; i++) {
+                            let orderId = fileJson[i]["订单编号"] == undefined ? fileJson[i]["\"订单编号\""] : fileJson[i]["订单编号"];
+                            let amount = fileJson[i]["总金额"] == undefined ? fileJson[i]["\"总金额\""] : fileJson[i]["总金额"];
+                            newOrders.push({
+                                orderId: clearSlash(orderId),
+                                amount: clearSlash(amount),
+                            });
+                        }
+                        uploadOrder($('#file-date-picker')[0].value, newOrders, file.name);
+                    }
+                    catch{
+                        alert('上传文件失败');
+                        loading(false);
+                    }
                 }
-                uploadFee($('#file-date-picker')[0].value, newFees, file.name);
+                reader.readAsText(file, 'utf-8');
             }
-            else if (fileJson.length > 0 && priceBaobeiId != undefined) {
-                let newPrices = [];
-                debugger;
-                for (let i = 0; i < fileJson.length; i++) {
-                    let baobeiId = fileJson[i]["BaobeiId"];
-                    let baobeiTitle = fileJson[i]["BaobeiTitle"];
-                    let unitPriceInEuro = fileJson[i]["UnitPriceInEuro"];
-                    if (unitPriceInEuro !== undefined)
-                        unitPriceInEuro = parseFloat(unitPriceInEuro);
-                    newPrices.push({
-                        baobeiId,
-                        baobeiTitle,
-                        unitPriceInEuro
-                    });
+        });
+    }
+    function uploadFeeFile() {
+        state.selectedFileType = 'Fee';
+        $('#file-picker').click();
+        $("#file-picker").change(function (e) {
+            if (state.selectedFileType === 'Fee') {
+                state.selectedFileType = '';
+                let file = e.currentTarget.files[0];
+                if (file === undefined) {
+                    return;
                 }
-                uploadPrice($('#file-date-picker')[0].value, newPrices, file.name);
+                var reader = new FileReader();
+                reader.onload = function () {
+                    try {
+                        loading(true);
+                        var fileJson = csvJSON(reader.result);
+                        debugger;
+                        let newFees = [];
+                        for (let i = 0; i < fileJson.length; i++) {
+                            let partnerOrderId = fileJson[i]["Partner_transaction_id"];
+                            let feeType = fileJson[i]["Fee_type"];
+                            let feeAmount = fileJson[i]["Fee_amount"];
+                            newFees.push({
+                                partnerOrderId: clearSlash(partnerOrderId),
+                                feeType: clearSlash(feeType),
+                                feeAmount: clearSlash(feeAmount)
+                            });
+                        }
+                        uploadFee($('#file-date-picker')[0].value, newFees, file.name);
+                    }
+                    catch{
+                        alert('上传文件失败');
+                        loading(false);
+                    }
+                }
+                reader.readAsText(file, 'utf-8');
             }
-            else {
-                alert('这个文件不能被识别');
+        });
+    }
+    function uploadShouruFile() {
+        state.selectedFileType = 'Shouru';
+        $('#file-picker').click();
+        $("#file-picker").change(function (e) {
+            if (state.selectedFileType === 'Shouru') {
+                state.selectedFileType = '';
+                let file = e.currentTarget.files[0];
+                if (file === undefined) {
+                    return;
+                }
+                var reader = new FileReader();
+                reader.onload = function () {
+                    try {
+                        loading(true);
+                        var fileJson = csvJSON(reader.result);
+                        let newSettles = [];
+                        debugger;
+                        for (let i = 0; i < fileJson.length; i++) {
+                            let orderId = fileJson[i]["Partner_transaction_id"];
+                            let amount = fileJson[i]["Amount"];
+                            let settleAmount = fileJson[i]["Settlement"];
+                            let settlementTime = fileJson[i]["Settlement_time"];
+                            if (amount != undefined && amount !== null)
+                                amount = amount.trim()
+                            if (settleAmount != undefined && settleAmount !== null)
+                                settleAmount = settleAmount.trim()
+                            newSettles.push({
+                                orderId,
+                                amount,
+                                settleAmount,
+                                settlementTime
+                            });
+                        }
+                        uploadSettle($('#file-date-picker')[0].value, newSettles, file.name);
+                    }
+                    catch (e) {
+                        console.log(e);
+                        alert('上传文件失败');
+                        loading(false);
+                    }
+                }
+                reader.readAsText(file, 'gb2312');
             }
-        };
-        reader.readAsText(file, 'utf-8');
-    });
+        });
+    }
+    function uploadUnitPriceFile() {
+        state.selectedFileType = 'UnitPrice';
+        $('#file-picker').click();
+        $("#file-picker").change(function (e) {
+            if (state.selectedFileType === 'UnitPrice') {
+                state.selectedFileType = '';
+                let file = e.currentTarget.files[0];
+                if (file === undefined) {
+                    return;
+                }
+                var reader = new FileReader();
+                reader.onload = function () {
+                    try {
+                        loading(true);
+                        var fileJson = csvJSON(reader.result);
+                        let newPrices = [];
+                        debugger;
+                        for (let i = 0; i < fileJson.length; i++) {
+                            let baobeiId = fileJson[i]["BaobeiId"];
+                            let baobeiTitle = fileJson[i]["BaobeiTitle"];
+                            let unitPriceInEuro = fileJson[i]["UnitPriceInEuro"];
+                            if (unitPriceInEuro !== undefined)
+                                unitPriceInEuro = parseFloat(unitPriceInEuro);
+                            newPrices.push({
+                                baobeiId: baobeiId,
+                                baobeiTitle: baobeiTitle,
+                                unitPriceInEuro: unitPriceInEuro
+                            });
+                        }
+                        uploadPrice($('#file-date-picker')[0].value, newPrices, file.name);
+                    }
+                    catch{
+                        alert('上传文件失败');
+                        loading(false);
+                    }
+                }
+                reader.readAsText(file, 'utf-8');
+            }
+        });
+    }
 
     function refreshFileGrid() {
         agGrid.simpleHttpRequest({ url: '/DataSource/GetAllFiles' }).then(function (data) {
@@ -159,14 +354,14 @@
 
     function onFileGridSelectionChanged() {
         var selectedRows = fileGridOptions.api.getSelectedRows();
-        selectionRow = selectedRows[0];
+        state.selectionRow = selectedRows[0];
         refreshDatasourceGrid();
         //alert(JSON.stringify(selectedRows[0]));
     }
 
     function refreshDatasourceGrid() {
-        if (selectionRow != null) {
-            switch (selectionRow.fileType) {
+        if (state.selectionRow != null) {
+            switch (state.selectionRow.fileType) {
                 case 'Baobei':
                     debugger;
                     datasourceGridOptions.api.setColumnDefs([
@@ -183,7 +378,9 @@
                             headerName: "标题", field: "baobeiTitle"
                         }
                     ]);
-                    agGrid.simpleHttpRequest({ url: '/DataSource/GetBaobeis?date=' + selectionRow.date }).then(function (data) {
+                    loading(true);
+                    agGrid.simpleHttpRequest({ url: '/DataSource/GetBaobeis?date=' + state.selectionRow.date }).then(function (data) {
+                        loading(false);
                         datasourceGridOptions.api.setRowData(data);
                     });
                     break;
@@ -196,7 +393,9 @@
                             headerName: "总金额", field: "amount"
                         }
                     ]);
-                    agGrid.simpleHttpRequest({ url: '/DataSource/GetOrders?date=' + selectionRow.date }).then(function (data) {
+                    loading(true);
+                    agGrid.simpleHttpRequest({ url: '/DataSource/GetOrders?date=' + state.selectionRow.date }).then(function (data) {
+                        loading(false);
                         datasourceGridOptions.api.setRowData(data);
                     });
                     break;
@@ -212,8 +411,9 @@
                             headerName: "Fee Amount", field: "feeAmount"
                         }
                     ]);
-                    agGrid.simpleHttpRequest({ url: '/DataSource/GetFees?date=' + selectionRow.date }).then(function (data) {
-                        debugger;
+                    loading(true);
+                    agGrid.simpleHttpRequest({ url: '/DataSource/GetFees?date=' + state.selectionRow.date }).then(function (data) {
+                        loading(false);
                         datasourceGridOptions.api.setRowData(data);
                     });
                     break;
@@ -229,8 +429,30 @@
                             headerName: "宝贝单价", field: "unitPriceInEuro"
                         }
                     ]);
-                    agGrid.simpleHttpRequest({ url: '/DataSource/GetPrices?date=' + selectionRow.date }).then(function (data) {
-                        debugger;
+                    loading(true);
+                    agGrid.simpleHttpRequest({ url: '/DataSource/GetPrices?date=' + state.selectionRow.date }).then(function (data) {
+                        loading(false);
+                        datasourceGridOptions.api.setRowData(data);
+                    });
+                    break;
+                case 'Settle':
+                    datasourceGridOptions.api.setColumnDefs([
+                        {
+                            headerName: "订单编号", field: "orderId"
+                        },
+                        {
+                            headerName: "应总收入", field: "amount"
+                        },
+                        {
+                            headerName: "实际入账", field: "settleAmount"
+                        },
+                        {
+                            headerName: "入账时间", field: "settlementTime"
+                        }
+                    ]);
+                    loading(true);
+                    agGrid.simpleHttpRequest({ url: '/DataSource/GetSettles?date=' + state.selectionRow.date }).then(function (data) {
+                        loading(false);
                         datasourceGridOptions.api.setRowData(data);
                     });
                     break;
@@ -252,12 +474,16 @@
             },
             body: JSON.stringify({ date, newFees: jsonValue, fileName })
         }).then(e => {
+            loading(false);
             if (e.status === 200) {
                 refreshFileGrid();
             }
             else {
                 alert('上传文件失败');
             }
+            }).catch(e => {
+                alert('上传文件失败');
+            loading(false);
         });
     }
 
@@ -270,12 +496,15 @@
             },
             body: JSON.stringify({ date, newPrices: jsonValue, fileName })
         }).then(e => {
+            loading(false);
             if (e.status === 200) {
                 refreshFileGrid();
             }
             else {
                 alert('上传文件失败');
             }
+        }).catch(e => {
+            loading(false);
         });
     }
 
@@ -288,49 +517,17 @@
             },
             body: JSON.stringify({ date, newBaobeis: jsonValue, fileName })
         }).then(e => {
+            loading(false);
             if (e.status === 200) {
                 refreshFileGrid();
             }
             else {
                 alert('上传文件失败');
             }
+            }).catch(e => {
+                alert('上传文件失败');
+            loading(false);
         });
-    }
-
-    function deleteSelectedItems() {
-        if (selectionRow != null) {
-            let fetchUrl = '/DataSource/';
-            if (selectionRow.fileType == 'Order') {
-                fetchUrl = fetchUrl + 'DeleteDataFromOrderTableAsync';
-            }
-            else if (selectionRow.fileType == 'Baobei') {
-                fetchUrl = fetchUrl + 'DeleteDataFromBaobeiTableAsync';
-            }
-            else if (selectionRow.fileType == 'Fee') {
-                fetchUrl = fetchUrl + 'DeleteDataFromFeeTableAsync';
-            }
-            else if (selectionRow.fileType == 'Price') {
-                fetchUrl = fetchUrl + 'DeleteDataFromPriceTableAsync';
-            }
-            fetch(fetchUrl, {
-                method: 'POST',
-                headers: {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(selectionRow)
-            }).then(e => {
-                debugger;
-                if (e.status === 200) {
-                    refreshFileGrid();
-                    selectionRow = null;
-                    refreshDatasourceGrid();
-                }
-                else {
-                    alert('删除数据失败');
-                }
-            });
-        }
     }
 
     function uploadOrder(date, jsonValue, fileName) {
@@ -346,16 +543,91 @@
                 fileName
             })
         }).then(e => {
+            loading(false);
             if (e.status === 200) {
                 refreshFileGrid();
             }
             else {
                 alert('上传文件失败');
             }
-        });;
+        }).catch(e => {
+            alert('上传文件失败');
+            loading(false);
+        });
     }
 
-    function csvJSON(csv) {
+    function uploadSettle(date, jsonValue, fileName) {
+        debugger;
+        fetch('/DataSource/InsertDataToSettleTable', {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                date,
+                newSettles: jsonValue,
+                fileName
+            })
+        }).then(e => {
+            loading(false);
+            if (e.status === 200) {
+                refreshFileGrid();
+            }
+            else {
+                alert('上传文件失败');
+            }
+        }).catch(e => {
+            alert('上传文件失败');
+            loading(false);
+        });
+    }
+
+    function deleteSelectedItems() {
+        if (state.selectionRow != null) {
+            let fetchUrl = '/DataSource/';
+            if (state.selectionRow.fileType == 'Order') {
+                fetchUrl = fetchUrl + 'DeleteDataFromOrderTableAsync';
+            }
+            else if (state.selectionRow.fileType == 'Baobei') {
+                fetchUrl = fetchUrl + 'DeleteDataFromBaobeiTableAsync';
+            }
+            else if (state.selectionRow.fileType == 'Fee') {
+                fetchUrl = fetchUrl + 'DeleteDataFromFeeTableAsync';
+            }
+            else if (state.selectionRow.fileType == 'Price') {
+                fetchUrl = fetchUrl + 'DeleteDataFromPriceTableAsync';
+            }
+            else if (state.selectionRow.fileType == 'Settle') {
+                fetchUrl = fetchUrl + 'DeleteDataFromSettleTableAsync';
+            }
+            loading(true);
+            fetch(fetchUrl, {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(state.selectionRow)
+            }).then(e => {
+                loading(false);
+                debugger;
+                if (e.status === 200) {
+                    refreshFileGrid();
+                    state.selectionRow = null;
+                    refreshDatasourceGrid();
+                }
+                else {
+                    alert('删除数据失败');
+                }
+            }).catch(e => {
+                alert('出现了错误');
+                loading(false);
+            });
+        }
+    }
+
+    function csvJSON(csv, path) {
         var lines = csv.split("\n");
         var result = [];
         var headers = lines[0].split(",");
@@ -369,7 +641,14 @@
         }
         return result;
     }
-
+    function loading(ifOpen) {
+        if (ifOpen) {
+            $('.loader-background')[0].style.display = '';
+        }
+        else {
+            $('.loader-background')[0].style.display = 'none';
+        }
+    }
     function formatDate(date) {
         var d = new Date(date),
             month = '' + (d.getMonth() + 1),

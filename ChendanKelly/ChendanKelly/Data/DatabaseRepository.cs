@@ -33,6 +33,11 @@ namespace ChendanKelly.Data
         Task InsertDataToPriceTableAsync(List<Price> newPrices, DateTime date,
             string fileName);
         Task DeleteDataFromPriceTableAsync(DateTime date, int fileId);
+
+        Task<List<Settle>> GetSettlesAsync(string date);
+        Task InsertDataToSettleTableAsync(List<Settle> newSettles, DateTime date,
+            string fileName);
+        Task DeleteDataFromSettleTableAsync(DateTime date, int fileId);
     }
 
     public class DatabaseRepository : IDatabaseRepository
@@ -75,7 +80,8 @@ namespace ChendanKelly.Data
                     Amount = 0
                 });
             }
-            var relatedPrices = _dbContext.Prices.Where(p => result.BaobeiTotalResults.Any(pp=>pp.BaobeiId == p.BaobeiId));
+            var relatedPrices = _dbContext.Prices.Where(p => p.OriginSourceDate != null && p.OriginSourceDate.Value.Date == date.Date &&
+                result.BaobeiTotalResults.Any(pp=>pp.BaobeiId == p.BaobeiId)).ToList();
             foreach (var item in result.BaobeiTotalResults)
             {
                 var price = relatedPrices.FirstOrDefault(p => p.BaobeiId == item.BaobeiId);
@@ -83,52 +89,96 @@ namespace ChendanKelly.Data
                     item.Amount = item.Quantity * (price.UnitPriceInEuro ?? 0);
             }
 
-            // Set transaction datas
-            var orders = _dbContext.Orders.Where(p => p.OriginSourceDate != null && p.OriginSourceDate.Value.Date == date.Date).ToList();
             result.Transactions = new List<TransactionResult>();
-            foreach (var order in orders)
+            var ordersQuery = from o in _dbContext.Orders
+                              join b in _dbContext.Baobeis
+                              on o.OrderId equals b.OrderId
+                              where o.OriginSourceDate != null && o.OriginSourceDate.Value.Date == date.Date
+                              select new {
+                                  OrderId = o.OrderId,
+                                  OrderTotalAmout = o.Amount,
+                                  BaobeiId = b.BaobeiExternalId,
+                                  BaobeiTitle = b.BaobeiTitle,
+                                  BaobeiQuantity = b.Quantity
+                              };
+            var orderBaobeis = await ordersQuery.ToListAsync();
+            var orderGroups = orderBaobeis.GroupBy(p => p.OrderId);
+            foreach (var group in orderGroups)
             {
-                result.Transactions.Add(new TransactionResult
+                var transaction = new TransactionResult
                 {
-                    OrderId = order.OrderId,
+                    OrderId = group.Key,
                     BaobeiResults = new List<BaobeiResultViewModel>(),
                     FeeResults = new List<FeeResultPerTransaction>()
-                });
-            }
-            // Get all baobei records of a transaction
-            foreach (var baobei in baobeiAndPriceQuery)
-            {
-                var transaction = result.Transactions.FirstOrDefault(p => p.OrderId == baobei.OrderId);
-                if (transaction == null)
-                    transaction = AddNewEmptyTransaction(result, baobei.OrderId);
-                var price = relatedPrices.FirstOrDefault(p => p.BaobeiId == baobei.BaobeiId);
-                transaction.BaobeiResults.Add(new BaobeiResultViewModel
+                };
+                result.Transactions.Add(transaction);
+                foreach (var item in group)
                 {
-                    BaobeiId = baobei.BaobeiId,
-                    BaobeiTitle = baobei.BaobeiTitle,
-                    Quantity = baobei.Quantity,
-                    Amount = (price == null ? 0 : ((price.UnitPriceInEuro ?? 0) * baobei.Quantity))
-                });
-            }
-            // Get all fees of a transaction
-            var fees = _dbContext.Fees.Where(p => p.OriginSourceDate != null && p.OriginSourceDate.Value.Date == date.Date).ToList();
-            for(int i=0;i<fees.Count;i++)
-                if (fees[i].FeeType != null && fees[i].FeeType.Contains("Taobaoke"))
-                    fees[i].FeeType = "Taobaoke";
-            foreach (var fee in fees)
-            {
-                var transaction = result.Transactions.FirstOrDefault(p => p.OrderId == fee.PartnerOrderId);
-                if (transaction == null)
-                    transaction = AddNewEmptyTransaction(result, fee.PartnerOrderId);
-                transaction.FeeResults.Add(new FeeResultPerTransaction
-                {
-                    FeeAmount = fee.FeeAmount ?? 0,
-                    FeeType = fee.FeeType
-                });
+                    var price = relatedPrices.FirstOrDefault(p => p.BaobeiId == item.BaobeiId);
+                    transaction.BaobeiResults.Add(new BaobeiResultViewModel
+                    {
+                        BaobeiId = item.BaobeiId,
+                        BaobeiTitle = item.BaobeiTitle,
+                        Quantity = item.BaobeiQuantity,
+                        Amount = (price == null ? 0 : ((price.UnitPriceInEuro ?? 0) * item.BaobeiQuantity))
+                    });
+                }
             }
 
+            // Get all fees of a transaction
+            var od = _dbContext.Orders.FirstOrDefault(p => p.OrderId == "153690488074991866");
+            var fe = _dbContext.Fees.FirstOrDefault(p => p.PartnerOrderId.Contains("153690488074991866"));
+            var orderFeesQuery = from o in _dbContext.Orders
+                                 join f in _dbContext.Fees
+                                 on (o.OrderId ?? "").Trim() equals (f.PartnerOrderId ?? "").Trim()
+                                 where o.OriginSourceDate != null && o.OriginSourceDate.Value.Date == date.Date &&
+                                    !string.IsNullOrWhiteSpace(o.OrderId)
+                                 select new
+                                 {
+                                     OrderId = o.OrderId,
+                                     OrderTotalAmout = o.Amount,
+                                     FeeType = (!string.IsNullOrWhiteSpace(f.FeeType) && f.FeeType.Contains("Taobaoke")) ? "Taobaoke":f.FeeType,
+                                     FeeAmount = f.FeeAmount
+                                 };
+            var orderFees = await orderFeesQuery.ToListAsync();
+            var orderFeeGroups = orderFees.GroupBy(p => p.OrderId).ToList();
+            foreach(var group in orderFeeGroups)
+            {
+                foreach(var item in group)
+                {
+                    var transaction = result.Transactions.FirstOrDefault(p => p.OrderId == group.Key);
+                    if (transaction == null)
+                        transaction = AddNewEmptyTransaction(result, group.Key);
+                    string feeType = item.FeeType;
+                    //if (!string.IsNullOrWhiteSpace(item.FeeType) && item.FeeType.Contains("Taobaoke"))
+                    //    feeType = "Taobaoke";
+                    transaction.FeeResults.Add(new FeeResultPerTransaction
+                    {
+                        FeeAmount = item.FeeAmount ?? 0,
+                        FeeType = feeType
+                    });
+                }
+            }
+
+            //var fees = _dbContext.Fees.Where(p => p.OriginSourceDate != null && p.OriginSourceDate.Value.Date >= date.Date &&
+            //    p.OriginSourceDate.Value.Date < DateTime.UtcNow.AddDays(90).Date).ToList();
+            //for(int i=0;i<fees.Count;i++)
+            //    if (fees[i].FeeType != null && fees[i].FeeType.Contains("Taobaoke"))
+            //        fees[i].FeeType = "Taobaoke";
+            //foreach (var fee in fees)
+            //{
+            //    var transaction = result.Transactions.FirstOrDefault(p => p.OrderId == fee.PartnerOrderId);
+            //    if (transaction == null)
+            //        transaction = AddNewEmptyTransaction(result, fee.PartnerOrderId);
+            //    transaction.FeeResults.Add(new FeeResultPerTransaction
+            //    {
+            //        FeeAmount = fee.FeeAmount ?? 0,
+            //        FeeType = fee.FeeType
+            //    });
+            //}
+
             // FeeTypes list
-            result.FeeTypes = fees.Select(p => p.FeeType).Distinct().ToList();
+            result.FeeTypes = orderFees.Select(p => p.FeeType).Distinct().ToList();
 
             return result;
         }
@@ -261,7 +311,7 @@ namespace ChendanKelly.Data
         #endregion
 
 
-        #region
+        #region Price
         public async Task<List<Price>> GetPricesAsync(string date)
         {
             try
@@ -305,6 +355,44 @@ namespace ChendanKelly.Data
             foreach (var price in prices)
             {
                 _dbContext.Prices.Remove(price);
+            }
+            var file = _dbContext.Files.FirstOrDefault(p => p.Id == fileId);
+            _dbContext.Files.Remove(file);
+            await _dbContext.SaveChangesAsync();
+        }
+        #endregion
+
+
+        #region Settle
+        public async Task<List<Settle>> GetSettlesAsync(string date)
+        {
+            var prices = await _dbContext.Settles.Where(p => p.OriginSourceDate != null &&
+                p.OriginSourceDate.Value.Date == Convert.ToDateTime(date)).ToListAsync();
+            return prices;
+        }
+
+        public async Task InsertDataToSettleTableAsync(List<Settle> newSettles, DateTime date, string fileName)
+        {
+            foreach (var s in newSettles)
+            {
+                s.OriginSourceDate = date;
+                _dbContext.Settles.Add(s);
+            }
+            _dbContext.Files.Add(new File()
+            {
+                Date = date,
+                FileName = fileName,
+                FileType = FileTypeEnum.Settle.ToString()
+            });
+            await _dbContext.SaveChangesAsync();
+        }
+
+        public async Task DeleteDataFromSettleTableAsync(DateTime date, int fileId)
+        {
+            var settles = _dbContext.Settles.Where(p => p.OriginSourceDate == date).ToList();
+            foreach (var bb in settles)
+            {
+                _dbContext.Settles.Remove(bb);
             }
             var file = _dbContext.Files.FirstOrDefault(p => p.Id == fileId);
             _dbContext.Files.Remove(file);
