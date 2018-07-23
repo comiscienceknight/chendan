@@ -98,18 +98,19 @@
     
     var fileGridColumnDefs = [
         {
-            headerName: "Date", field: "date", width: 90, rowGroup: true
+            headerName: "Date", field: "date", width: 90, rowGroup: true, hide: true
         },
         {
-            headerName: "FileName", field: "fileName", width: 250
+            headerName: "FileName", field: "fileName", width: 300
         }
     ];
     var fileGridOptions = {
         columnDefs: fileGridColumnDefs,
         rowSelection: 'single',
         onSelectionChanged: onFileGridSelectionChanged,
-        enableSorting: true
-        //rowData: fileRowData
+        enableSorting: true,
+        groupMultiAutoColumn: true,
+        enableColResize: true
     };
     var fileGrid = document.querySelector('#fileGrid');
     new agGrid.Grid(fileGrid, fileGridOptions);
@@ -349,6 +350,7 @@
                 newData.push(data[i]);
             }
             fileGridOptions.api.setRowData(data);
+            fileGridOptions.api.sizeColumnsToFit();
         });
     }
 

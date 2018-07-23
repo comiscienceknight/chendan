@@ -3,11 +3,76 @@
 }
 
 <style>
-    table, td {
+    table, th, td {
         border: 1px solid black;
     }
-    tr {
-        border: 1px solid black;
+
+    thead tr {
+        display: block;
+        position: relative;
+    }
+
+    thead th {
+        text-align: center;
+    }
+
+    tbody {
+        display: block;
+        overflow: auto;
+        width: 100%;
+        height: 500px;
+    }
+
+    .loader-background {
+        width: 100%;
+        height: 750px;
+        background-color: #9b99993d;
+        position: relative;
+        padding-top: 250px;
+    }
+
+
+    /*#result-table {
+        width: 600px;
+        overflow-x: scroll;
+        margin-left: 171px;
+        overflow-y: visible;
+        padding-bottom: 1px;
+    }
+
+    .headcol {
+        position: absolute;
+        width: 5em;
+        left: 0;
+        top: auto;
+        border-right: 0px none black;
+        border-top-width: 3px; /*only relevant for first row*/
+        margin-top: -3px; /*compensate for top border*/
+    }
+
+        .headcol:before {
+            content: 'Row ';
+        }*/
+
+    .loader {
+        border: 16px solid #f3f3f3; /* Light grey */
+        border-top: 16px solid #3498db; /* Blue */
+        border-radius: 50%;
+        width: 120px;
+        height: 120px;
+        animation: spin 2s linear infinite;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    @@keyframes spin {
+        0% {
+            transform: rotate(0deg);
+        }
+
+        100% {
+            transform: rotate(360deg);
+        }
     }
 </style>
 
@@ -21,6 +86,9 @@
 
         </div>
     </div>
+    <div class="loader-background">
+        <div class="loader"></div>
+    </div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.8.0/xlsx.js"></script>
@@ -30,6 +98,7 @@
     $(document).ready(function () {
         $('#date-picker').val(formatDate(new Date()));
         getResultByDate($('#date-picker')[0].value);
+        loading(false);
     });
 
     function datePickerChange() {
@@ -37,8 +106,10 @@
     }
 
     function getResultByDate(date) {
-        $('#loading')[0].style.display = 'initial';
+        //$('#loading')[0].style.display = 'initial';
         $('#result-table')[0].innerHtml = '';
+
+        loading(true);
         fetch('/DataSource/GetResult/' + date, {
             method: 'GET',
             headers: {
@@ -46,7 +117,7 @@
                 'Content-Type': 'application/json'
             }
         }).then(e => {
-            $('#loading')[0].style.display = 'none';
+            //$('#loading')[0].style.display = 'none';
             if (e.status === 200) {
                 return e.json()
             }
@@ -56,37 +127,43 @@
         }).then(body => {
             //$('#result-table')[0].innerHTML = JSON.stringify(body);
             composeHtml(body);
-        });
-            //.catch(e => {
-            //    $('#loading')[0].style.display = 'none';
-            //});
+            loading(false);
+        })
+            .catch (e => {
+                loading(false);
+                //$('#loading')[0].style.display = 'none';
+            });
     }
 
     function composeHtml(dataSource) {
         var table = document.createElement('table');
+        var thead = document.createElement('thead');
+        var tbody = document.createElement('tbody');
         let baobeiPositions = [], feePositions = [];
+        table.appendChild(thead);
+        table.appendChild(tbody);
+        composeFirst3Lines(thead, dataSource, baobeiPositions, feePositions);
         debugger;
-        composeFirst3Lines(table, dataSource, baobeiPositions, feePositions);
-        debugger;
-        composeTransactions(table, dataSource, baobeiPositions, feePositions);
+        composeTransactions(tbody, dataSource, baobeiPositions, feePositions);
 
         document.getElementById('result-table').innerHTML = '';
         document.getElementById('result-table').appendChild(table);
     }
-    function composeCell(td, innerText) {
+    function composeCell(td, innerText, specialWidth) {
         let tdDiv = document.createElement('div');
         tdDiv.innerText = innerText;
-        tdDiv.style.width = '100px';
+        tdDiv.style.width = (specialWidth !== undefined ? specialWidth : '100px');
         tdDiv.style.padding = '5px';
         td.appendChild(tdDiv);
     }
-    function composeTransactions(table, dataSource, baobeiPositions, feePositions) {
+    function composeTransactions(tbody, dataSource, baobeiPositions, feePositions) {
         let transactions = dataSource.transactions;
         for (let i = 0; i < transactions.length; i++) {
             let transc = transactions[i];
             var row = document.createElement('tr');
             let td_transactionid = document.createElement('td');
-            composeCell(td_transactionid, transc.orderId);
+            composeCell(td_transactionid, transc.orderId, '170px');
+            td_transactionid.className = 'headcol';
             row.appendChild(td_transactionid);
             let td_settle = document.createElement('td');
             composeCell(td_settle, transc.settle);
@@ -130,20 +207,31 @@
                     row.appendChild(document.createElement('td'));
                 }
             }
-            table.appendChild(row);
+            tbody.appendChild(row);
         }
     }
-    function composeFirst3Lines(table, dataSource, baobeiPositions, feePositions) {
+    function composeFirst3Lines(thead, dataSource, baobeiPositions, feePositions) {
         var trFirstRow = document.createElement('tr');
         var trSecondRow = document.createElement('tr');
         var trThirdRow = document.createElement('tr');
 
         let td1_0 = document.createElement('td');
-        td1_0.colSpan = dataSource.feeTypes.length + 3;
+        td1_0.style.width = '171px';
+        td1_0.className = 'headcol';
         trFirstRow.appendChild(td1_0);
+        let td1_1 = document.createElement('td');
+        td1_1.colSpan = dataSource.feeTypes.length + 2;
+        td1_1.style.width = (100 * (dataSource.feeTypes.length + 2) + 76) + 'px';
+        trFirstRow.appendChild(td1_1);
         let td2_0 = document.createElement('td');
-        td2_0.colSpan = dataSource.feeTypes.length + 3;
+        td2_0.style.width = '171px';
+        td2_0.className = 'headcol';
         trSecondRow.appendChild(td2_0);
+        let td2_1 = document.createElement('td');
+        td2_1.colSpan = dataSource.feeTypes.length + 2;
+        td2_1.style.width = (100 * (dataSource.feeTypes.length + 2) + 76) + 'px';
+        trSecondRow.appendChild(td2_1);
+
         for (let i = 0; i < dataSource.feeTypes.length + 3; i++) {
             if (i >= 3) {
                 let feeType = dataSource.feeTypes[i-3];
@@ -163,6 +251,7 @@
                 if (i === 0) {
                     td3_innerDiv.innerText = '订单编号';
                     td3_innerDiv.style.width = '170px';
+                    td3_innerDiv.className = 'headcol';
                 }
                 else if (i === 1)
                     td3_innerDiv.innerText = '已收款';
@@ -181,7 +270,7 @@
             td.colSpan = 2;
             let td_innerDiv = document.createElement('div');
             td_innerDiv.innerText = btr.baobeiId + ' - ' + btr.baobeiTitle;
-            td_innerDiv.style.width = '160px';
+            td_innerDiv.style.width = '201px';
             td_innerDiv.style.padding = '5px';
             td.appendChild(td_innerDiv);
             trFirstRow.appendChild(td);
@@ -192,14 +281,14 @@
             let td2_1 = document.createElement('td');
             let td2_1_innerDiv = document.createElement('div');
             td2_1_innerDiv.innerText = '总数量';
-            td2_1_innerDiv.style.width = '80px';
+            td2_1_innerDiv.style.width = '100px';
             td2_1_innerDiv.style.padding = '5px';
             td2_1.appendChild(td2_1_innerDiv);
             trSecondRow.appendChild(td2_1);
             let td2_2 = document.createElement('td');
             let td2_2_innerDiv = document.createElement('div');
             td2_2_innerDiv.innerText = '产品总价';
-            td2_2_innerDiv.style.width = '80px';
+            td2_2_innerDiv.style.width = '100px';
             td2_2_innerDiv.style.padding = '5px';
             td2_2.appendChild(td2_2_innerDiv);
             trSecondRow.appendChild(td2_2);
@@ -207,22 +296,22 @@
             let td3_1 = document.createElement('td');
             let td3_1_innerDiv = document.createElement('div');
             td3_1_innerDiv.innerText = btr.quantity;
-            td3_1_innerDiv.style.width = '80px';
+            td3_1_innerDiv.style.width = '100px';
             td3_1_innerDiv.style.padding = '5px';
             td3_1.appendChild(td3_1_innerDiv);
             trThirdRow.appendChild(td3_1);
             let td3_2 = document.createElement('td');
             let td3_2_innerDiv = document.createElement('div');
             td3_2_innerDiv.innerText = btr.amount;
-            td3_2_innerDiv.style.width = '80px';
+            td3_2_innerDiv.style.width = '100px';
             td3_2_innerDiv.style.padding = '5px';
             td3_2.appendChild(td3_2_innerDiv);
             trThirdRow.appendChild(td3_2);
         }
 
-        table.appendChild(trFirstRow);
-        table.appendChild(trSecondRow);
-        table.appendChild(trThirdRow);
+        thead.appendChild(trFirstRow);
+        thead.appendChild(trSecondRow);
+        thead.appendChild(trThirdRow);
     }
     
     function formatDate(date) {
@@ -235,6 +324,17 @@
         if (day.length < 2) day = '0' + day;
 
         return [year, month, day].join('-');
+    }
+
+    function loading(ifOpen) {
+        if (ifOpen) {
+            $('.loader-background')[0].style.display = '';
+            $('#loading')[0].style.display = '';
+        }
+        else {
+            $('.loader-background')[0].style.display = 'none';
+            $('#loading')[0].style.display = 'none';
+        }
     }
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.8.0/jszip.js"></script>

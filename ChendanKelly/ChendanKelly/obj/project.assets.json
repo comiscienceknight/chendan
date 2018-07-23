@@ -12230,11 +12230,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Projects\\Beau.Fullstack\\chendan\\ChendanKelly\\ChendanKelly\\ChendanKelly.csproj",
+      "projectUniqueName": "C:\\Projects\\ChendanKelly\\chendan\\ChendanKelly\\ChendanKelly\\ChendanKelly.csproj",
       "projectName": "ChendanKelly",
-      "projectPath": "C:\\Projects\\Beau.Fullstack\\chendan\\ChendanKelly\\ChendanKelly\\ChendanKelly.csproj",
+      "projectPath": "C:\\Projects\\ChendanKelly\\chendan\\ChendanKelly\\ChendanKelly\\ChendanKelly.csproj",
       "packagesPath": "C:\\Users\\comis\\.nuget\\packages\\",
-      "outputPath": "C:\\Projects\\Beau.Fullstack\\chendan\\ChendanKelly\\ChendanKelly\\obj\\",
+      "outputPath": "C:\\Projects\\ChendanKelly\\chendan\\ChendanKelly\\ChendanKelly\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files\\dotnet\\sdk\\NuGetFallbackFolder"

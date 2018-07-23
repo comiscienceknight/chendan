@@ -118,11 +118,18 @@ namespace ChendanKelly.Data
                     if (transaction == null)
                         transaction = AddNewEmptyTransaction(result, group.Key);
                     string feeType = item.FeeType;
-                    transaction.FeeResults.Add(new FeeResultPerTransaction
+                    if(transaction.FeeResults.Any(p=>p.FeeType == feeType))
                     {
-                        FeeAmount = item.FeeAmount ?? 0,
-                        FeeType = feeType
-                    });
+                        transaction.FeeResults.First(p => p.FeeType == feeType).FeeAmount += (item.FeeAmount ?? 0);
+                    }
+                    else
+                    {
+                        transaction.FeeResults.Add(new FeeResultPerTransaction
+                        {
+                            FeeAmount = item.FeeAmount ?? 0,
+                            FeeType = feeType
+                        });
+                    }
                 }
             }
 
