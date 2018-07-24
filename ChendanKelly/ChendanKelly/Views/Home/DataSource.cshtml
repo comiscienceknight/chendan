@@ -151,13 +151,26 @@
         $('#file-picker').click();
         $("#file-picker").change(function (e) {
             let file = e.currentTarget.files[0];
+            document.getElementById("file-picker").value = "";
             if (file.name.includes('fee_')) {
                 let dateStr = file.name.replace('fee_', '').replace('_', '-').replace('_', '-').replace('.csv', '');
-                uploadFeeFileCallback(e, dateStr);
+                uploadFeeFileCallback(file, dateStr);
             }
             if (file.name.includes('settle_')) {
                 let dateStr = file.name.replace('settle_', '').replace('_', '-').replace('_', '-').replace('.csv', '');
-                uploadShouruFileCallback(e, dateStr);
+                uploadShouruFileCallback(file, dateStr);
+            }
+            if (file.name.includes('price_')) {
+                let dateStr = file.name.replace('price_', '').replace('_', '-').replace('_', '-').replace('.csv', '');
+                uploadUnitPriceFileCallback(file, dateStr);
+            }
+            if (file.name.includes('日宝贝报表')) {
+                let dateStr = file.name.replace('price_', '').replace('_', '-').replace('_', '-').replace('.csv', '');
+                uploadBaobeiFileCallback(file, dateStr);
+            }
+            if (file.name.includes('日订单报表')) {
+                let dateStr = file.name.replace('price_', '').replace('_', '-').replace('_', '-').replace('.csv', '');
+                uploadOrderFileCallback(file, dateStr);
             }
         });
     }
@@ -167,13 +180,13 @@
         $("#file-picker").change(function (e) {
             if (state.selectedFileType === 'Baobei') {
                 state.selectedFileType = '';
-                uploadBaobeiFileCallback(e, $('#file-date-picker')[0].value);
+                let file = e.currentTarget.files[0];
+                document.getElementById("file-picker").value = "";
+                uploadBaobeiFileCallback(file, $('#file-date-picker')[0].value);
             }
         });
     }
-    function uploadBaobeiFileCallback(e, date) {
-        let file = e.currentTarget.files[0];
-        document.getElementById("file-date-picker").value = "";
+    function uploadBaobeiFileCallback(file, date) {
         if (file === undefined) {
             return;
         }
@@ -210,13 +223,13 @@
         $("#file-picker").change(function (e) {
             if (state.selectedFileType === 'Order') {
                 state.selectedFileType = '';
-                uploadOrderFileCallback(e);
+                let file = e.currentTarget.files[0];
+                document.getElementById("file-picker").value = "";
+                uploadOrderFileCallback(file, $('#file-date-picker')[0].value);
             }
         });
     }
-    function uploadOrderFileCallback(e) {
-        let file = e.currentTarget.files[0];
-        document.getElementById("file-date-picker").value = "";
+    function uploadOrderFileCallback(file, date) {        
         if (file === undefined) {
             return;
         }
@@ -235,7 +248,7 @@
                         amount: clearSlash(amount),
                     });
                 }
-                uploadOrder($('#file-date-picker')[0].value, newOrders, file.name);
+                uploadOrder(date, newOrders, file.name);
             }
             catch{
                 alert('上传文件失败');
@@ -250,13 +263,13 @@
         $("#file-picker").change(function (e) {
             if (state.selectedFileType === 'Fee') {
                 state.selectedFileType = '';
-                uploadFeeFileCallback(e, $('#file-date-picker')[0].value);
+                let file = e.currentTarget.files[0];
+                document.getElementById("file-picker").value = "";
+                uploadFeeFileCallback(file, $('#file-date-picker')[0].value);
             }
         });
     }
-    function uploadFeeFileCallback(e, date) {
-        let file = e.currentTarget.files[0];
-        document.getElementById("file-date-picker").value = "";
+    function uploadFeeFileCallback(file, date) {
         if (file === undefined) {
             return;
         }
@@ -292,13 +305,13 @@
         $("#file-picker").change(function (e) {
             if (state.selectedFileType === 'Shouru') {
                 state.selectedFileType = '';
-                uploadShouruFileCallback(e, $('#file-date-picker')[0].value);
+                let file = e.currentTarget.files[0];
+                document.getElementById("file-picker").value = "";
+                uploadShouruFileCallback(file, $('#file-date-picker')[0].value);
             }
         });
     }
-    function uploadShouruFileCallback(e, date) {
-        let file = e.currentTarget.files[0];
-        document.getElementById("file-date-picker").value = "";
+    function uploadShouruFileCallback(file, date) {
         if (file === undefined) {
             return;
         }
@@ -341,13 +354,14 @@
         $("#file-picker").change(function (e) {
             if (state.selectedFileType === 'UnitPrice') {
                 state.selectedFileType = '';
-                uploadUnitPriceFileCallback(e);
+                let file = e.currentTarget.files[0];
+                document.getElementById("file-picker").value = "";
+                uploadUnitPriceFileCallback(file, $('#file-date-picker')[0].value);
             }
         });
     }
-    function uploadUnitPriceFileCallback(e) {
+    function uploadUnitPriceFileCallback(file, date) {
         let file = e.currentTarget.files[0];
-        document.getElementById("file-date-picker").value = "";
         if (file === undefined) {
             return;
         }
@@ -370,7 +384,7 @@
                         unitPriceInEuro: unitPriceInEuro
                     });
                 }
-                uploadPrice($('#file-date-picker')[0].value, newPrices, file.name);
+                uploadPrice(date, newPrices, file.name);
             }
             catch{
                 alert('上传文件失败');
