@@ -164,9 +164,13 @@ namespace ChendanKelly.Data
                 foreach (var item in group)
                 {
                     var price = relatedPrices.FirstOrDefault(p => p.BaobeiId == item.BaobeiId);
+                    if(price == null)
+                    {
+                        price = relatedPrices.FirstOrDefault(p => p.BaobeiId == item.BaobeiTitle);
+                    }
                     transaction.BaobeiResults.Add(new BaobeiResultViewModel
                     {
-                        BaobeiId = item.BaobeiId,
+                        BaobeiId = (item.BaobeiId ?? "").ToUpper() == "NULL" ? item.BaobeiTitle : item.BaobeiId,
                         BaobeiTitle = item.BaobeiTitle,
                         Quantity = item.BaobeiQuantity,
                         Amount = (price == null ? 0 : ((price.UnitPriceInEuro ?? 0) * item.BaobeiQuantity))
@@ -179,18 +183,48 @@ namespace ChendanKelly.Data
         {
             var baobeiAndPriceQuery = from b in _dbContext.Baobeis
                                       join p in _dbContext.Prices
-                                      on b.BaobeiExternalId equals p.BaobeiId
+                                      on b.BaobeiExternalId equals p.BaobeiId into sr
+                                      from x in sr.DefaultIfEmpty()
                                       where b.OriginSourceDate != null && b.OriginSourceDate.Value.Date == date.Date
                                       select new
                                       {
                                           BaobeiId = b.BaobeiExternalId,
                                           Quantity = b.Quantity,
-                                          UnitPrice = p.UnitPriceInEuro,
+                                          UnitPrice = x.UnitPriceInEuro,
                                           BaobeiTitle = b.BaobeiTitle,
                                           OrderId = b.OrderId
                                       };
             var baobeiAndPriceArray = await baobeiAndPriceQuery.ToListAsync();
-            var baobeiAndPriceGroups = baobeiAndPriceArray.GroupBy(p => p.BaobeiId);
+
+            var promotionAndPriceQuery = from b in _dbContext.Baobeis
+                                      join p in _dbContext.Prices
+                                      on b.BaobeiTitle equals p.BaobeiId
+                                      where b.OriginSourceDate != null && b.OriginSourceDate.Value.Date == date.Date
+                                      select new
+                                      {
+                                          BaobeiId = b.BaobeiTitle,
+                                          Quantity = b.Quantity,
+                                          UnitPrice = p.UnitPriceInEuro,
+                                          BaobeiTitle = b.BaobeiTitle,
+                                          OrderId = b.OrderId
+                                      };
+            var promotionAndPriceArray = await promotionAndPriceQuery.ToListAsync();
+            baobeiAndPriceArray.AddRange(promotionAndPriceArray);
+            var baobeiAndPriceGroups = baobeiAndPriceArray.GroupBy(p => p.BaobeiId).ToList();
+            var nullGroup = baobeiAndPriceGroups.FirstOrDefault(p => p.Key == null);
+            if(nullGroup != null)
+            {
+                baobeiAndPriceGroups.Remove(nullGroup);
+
+            }
+            var nullStrGroup = baobeiAndPriceGroups.FirstOrDefault(p => p.Key.ToUpper() == "NULL");
+            if (nullStrGroup != null)
+            {
+                baobeiAndPriceGroups.Remove(nullStrGroup);
+                var items = nullStrGroup.ToList();
+                var groups = items.GroupBy(p => p.BaobeiTitle).ToList();
+                baobeiAndPriceGroups.AddRange(groups);
+            }
             result.BaobeiTotalResults = new List<BaobeiResultViewModel>();
             foreach (var item in baobeiAndPriceGroups)
             {
