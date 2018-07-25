@@ -152,25 +152,33 @@
         $("#file-picker").change(function (e) {
             let file = e.currentTarget.files[0];
             document.getElementById("file-picker").value = "";
-            if (file.name.includes('fee_')) {
-                let dateStr = file.name.replace('fee_', '').replace('_', '-').replace('_', '-').replace('.csv', '');
-                uploadFeeFileCallback(file, dateStr);
-            }
-            if (file.name.includes('settle_')) {
-                let dateStr = file.name.replace('settle_', '').replace('_', '-').replace('_', '-').replace('.csv', '');
-                uploadShouruFileCallback(file, dateStr);
-            }
-            if (file.name.includes('price_')) {
-                let dateStr = file.name.replace('price_', '').replace('_', '-').replace('_', '-').replace('.csv', '');
-                uploadUnitPriceFileCallback(file, dateStr);
-            }
-            if (file.name.includes('日宝贝报表')) {
-                let dateStr = file.name.replace('price_', '').replace('_', '-').replace('_', '-').replace('.csv', '');
-                uploadBaobeiFileCallback(file, dateStr);
-            }
-            if (file.name.includes('日订单报表')) {
-                let dateStr = file.name.replace('price_', '').replace('_', '-').replace('_', '-').replace('.csv', '');
-                uploadOrderFileCallback(file, dateStr);
+            if (file != undefined && file.name != undefined) {
+                if (file.name.includes('fee_')) {
+                    let dateStr = file.name.replace('fee_', '').replace('_', '-').replace('_', '-').replace('.csv', '');
+                    uploadFeeFileCallback(file, dateStr);
+                }
+                if (file.name.includes('settle_')) {
+                    let dateStr = file.name.replace('settle_', '').replace('_', '-').replace('_', '-').replace('.csv', '');
+                    uploadShouruFileCallback(file, dateStr);
+                }
+                if (file.name.includes('price_')) {
+                    let dateStr = file.name.replace('price_', '').replace('_', '-').replace('_', '-').replace('.csv', '');
+                    uploadUnitPriceFileCallback(file, dateStr);
+                }
+                if (file.name.includes('日宝贝报表')) {
+                    let year = (new Date()).getFullYear();
+                    let monthNumber = file.name.split('月')[0];
+                    let dayNumber = file.name.split('月')[1].split('日')[0];
+                    let dateStr = year + '-' + monthNumber + '-' + dayNumber;
+                    uploadBaobeiFileCallback(file, dateStr);
+                }
+                if (file.name.includes('日订单报表')) {
+                    let year = (new Date()).getFullYear();
+                    let monthNumber = file.name.split('月')[0];
+                    let dayNumber = file.name.split('月')[1].split('日')[0];
+                    let dateStr = year + '-' + monthNumber + '-' + dayNumber;
+                    uploadOrderFileCallback(file, dateStr);
+                }
             }
         });
     }
@@ -255,7 +263,7 @@
                 loading(false);
             }
         }
-        reader.readAsText(file, 'utf-8');
+        reader.readAsText(file, 'gb2312');
     }
     function uploadFeeFile() {
         state.selectedFileType = 'Fee';
@@ -361,7 +369,6 @@
         });
     }
     function uploadUnitPriceFileCallback(file, date) {
-        let file = e.currentTarget.files[0];
         if (file === undefined) {
             return;
         }
