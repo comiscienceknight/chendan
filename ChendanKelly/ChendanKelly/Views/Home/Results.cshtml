@@ -84,9 +84,13 @@
     }
 
     function generateExcelButtons() {
-        window.open('data:application/vnd.ms-excel,' + encodeURIComponent(
-            $('#result-table')[0].innerHTML
-        ));
+        var data = new Blob([$('#result-table')[0].innerHTML], {
+            type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=gb2312"
+        });
+        saveAs(data, $('#date-picker')[0].value + '.xls');
+        //window.open('data:application/vnd.ms-excel,' + encodeURIComponent(
+        //    $('#result-table')[0].innerHTML
+        //));
         //debugger;
         //var table = TableExport(document.getElementsByTagName("table"), {
         //    headers: true,                              // (Boolean), display table headers (th or td elements) in the <thead>, (default: true)
@@ -136,6 +140,7 @@
 
     function composeHtml(dataSource) {
         var table = document.createElement('table');
+        table.style.border = '1px solid black';
         var thead = document.createElement('thead');
         var tbody = document.createElement('tbody');
         let baobeiPositions = [], feePositions = [];
@@ -148,6 +153,7 @@
         document.getElementById('result-table').appendChild(table);
     }
     function composeCell(td, innerText, specialWidth) {
+        td.style.border = '1px solid black';
         let tdDiv = document.createElement('div');
         tdDiv.innerText = innerText;
         tdDiv.style.width = (specialWidth !== undefined ? specialWidth : '100px');
@@ -182,7 +188,9 @@
                     }
                 }
                 if (ifMatched === false) {
-                    row.appendChild(document.createElement('td'));
+                    let td0 = document.createElement('td')
+                    td0.style.border = '1px solid black';
+                    row.appendChild(td0);
                 }
             }
 
@@ -201,8 +209,12 @@
                     }
                 }
                 if (ifMatched === false) {
-                    row.appendChild(document.createElement('td'));
-                    row.appendChild(document.createElement('td'));
+                    let td0 = document.createElement('td')
+                    td0.style.border = '1px solid black';
+                    row.appendChild(td0);
+                    let td1 = document.createElement('td')
+                    td1.style.border = '1px solid black';
+                    row.appendChild(td1);
                 }
             }
             tbody.appendChild(row);
@@ -216,24 +228,29 @@
         let td1_0 = document.createElement('td');
         td1_0.style.width = '171px';
         td1_0.className = 'headcol';
+        td1_0.style.border = '1px solid black';
         trFirstRow.appendChild(td1_0);
         let td1_1 = document.createElement('td');
         td1_1.colSpan = dataSource.feeTypes.length + 2;
         td1_1.style.width = (100 * (dataSource.feeTypes.length + 2) + 76) + 'px';
+        td1_1.style.border = '1px solid black';
         trFirstRow.appendChild(td1_1);
         let td2_0 = document.createElement('td');
         td2_0.style.width = '171px';
         td2_0.className = 'headcol';
+        td2_0.style.border = '1px solid black';
         trSecondRow.appendChild(td2_0);
         let td2_1 = document.createElement('td');
         td2_1.colSpan = dataSource.feeTypes.length + 2;
         td2_1.style.width = (100 * (dataSource.feeTypes.length + 2) + 76) + 'px';
+        td2_1.style.border = '1px solid black';
         trSecondRow.appendChild(td2_1);
 
         for (let i = 0; i < dataSource.feeTypes.length + 3; i++) {
             if (i >= 3) {
                 let feeType = dataSource.feeTypes[i-3];
                 let td3 = document.createElement('td');
+                td3.style.border = '1px solid black';
                 let td3_innerDiv = document.createElement('div');
                 td3_innerDiv.innerText = feeType;
                 td3_innerDiv.style.width = '100px';
@@ -244,6 +261,7 @@
             }
             else{
                 let td3 = document.createElement('td');
+                td3.style.border = '1px solid black';
                 let td3_innerDiv = document.createElement('div');
                 td3_innerDiv.style.width = '100px';
                 if (i === 0) {
@@ -266,6 +284,7 @@
 
             let td = document.createElement('td');
             td.colSpan = 2;
+            td.style.border = '1px solid black';
             let td_innerDiv = document.createElement('div');
             td_innerDiv.innerText = btr.baobeiId + ' - ' + btr.baobeiTitle;
             td_innerDiv.style.width = '201px';
@@ -277,6 +296,7 @@
             baobeiPositions.push[btr.baobeiId];
 
             let td2_1 = document.createElement('td');
+            td2_1.style.border = '1px solid black';
             let td2_1_innerDiv = document.createElement('div');
             td2_1_innerDiv.innerText = '总数量';
             td2_1_innerDiv.style.width = '100px';
@@ -284,6 +304,7 @@
             td2_1.appendChild(td2_1_innerDiv);
             trSecondRow.appendChild(td2_1);
             let td2_2 = document.createElement('td');
+            td2_2.style.border = '1px solid black';
             let td2_2_innerDiv = document.createElement('div');
             td2_2_innerDiv.innerText = '产品总价';
             td2_2_innerDiv.style.width = '100px';
@@ -292,6 +313,7 @@
             trSecondRow.appendChild(td2_2);
 
             let td3_1 = document.createElement('td');
+            td3_1.style.border = '1px solid black';
             let td3_1_innerDiv = document.createElement('div');
             td3_1_innerDiv.innerText = btr.quantity;
             td3_1_innerDiv.style.width = '100px';
@@ -299,6 +321,7 @@
             td3_1.appendChild(td3_1_innerDiv);
             trThirdRow.appendChild(td3_1);
             let td3_2 = document.createElement('td');
+            td3_2.style.border = '1px solid black';
             let td3_2_innerDiv = document.createElement('div');
             td3_2_innerDiv.innerText = btr.amount;
             td3_2_innerDiv.style.width = '100px';
