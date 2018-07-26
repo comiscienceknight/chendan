@@ -31,7 +31,7 @@
 </style>
 <div class="row" id="datasource">
 
-    <div class="col-lg-4" style="padding:5px;">
+    <div class="col-lg-3" style="padding:5px;">
         <div style="height:90px">
             <label for="start">文件对应的日期</label>
             <input type="date" id="file-date-picker" name="trip"
@@ -71,7 +71,7 @@
         </div>
     </div>
 
-    <div class="col-lg-8" style="padding:5px;">
+    <div class="col-lg-9" style="padding:5px;">
         <div style="height:50px;position:relative;">
             <button style="position:absolute;bottom:0px;" id="delete-selected-items" onclick="deleteSelectedItems()">删除表格中内容</button>
        
@@ -100,6 +100,10 @@
         $('#file-date-picker').val(formatDate(new Date()));
         loading(false);
     });
+    setGridHeight();
+    $(window).resize(function () {
+        setGridHeight();
+    });
     
     var fileGridColumnDefs = [
         {
@@ -125,13 +129,17 @@
     var datasourceGridOptions = {
         rowSelection: 'single',
         columnDefs: [],
-        enableSorting: true
+        enableSorting: true,
+        enableColResize: true
     };
     var datasourceGrid = document.querySelector('#datasourceGrid');
     new agGrid.Grid(datasourceGrid, datasourceGridOptions);
     refreshDatasourceGrid();
 
-
+    function setGridHeight() {
+        $('#fileGrid')[0].style.height = (window.innerHeight - 200) + 'px';
+        $('#datasourceGrid')[0].style.height = (window.innerHeight - 160) + 'px';
+    }
     function clearSlash(text) {
         if (!((typeof text) == 'string'))
             return text;
@@ -524,6 +532,8 @@
             ]);
             datasourceGridOptions.api.setRowData([]);
         }
+
+        datasourceGridOptions.api.sizeColumnsToFit();
     }
 
     function uploadFee(date, jsonValue, fileName) {
