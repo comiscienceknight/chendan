@@ -33,6 +33,8 @@ C:\Projects\ChendanKelly\chendan\ChendanKelly\ChendanKelly\obj\Debug\netcoreapp2
 C:\Projects\ChendanKelly\chendan\ChendanKelly\ChendanKelly\obj\Debug\netcoreapp2.1\ChendanKelly.pdb
 C:\Projects\ChendanKelly\chendan\ChendanKelly\ChendanKelly\obj\Debug\netcoreapp2.1\ChendanKelly.csproj.CopyComplete
 C:\Projects\ChendanKelly\chendan\ChendanKelly\ChendanKelly\obj\Debug\netcoreapp2.1\Razor\Views\Home\DataSource.g.cshtml.cs
+C:\Projects\ChendanKelly\chendan\ChendanKelly\ChendanKelly\obj\Debug\netcoreapp2.1\Razor\Views\Home\Results.g.cshtml.cs
+C:\Projects\ChendanKelly\chendan\ChendanKelly\ChendanKelly\obj\Debug\netcoreapp2.1\ChendanKelly.csprojAssemblyReference.cache
 C:\Projects\Beau.Fullstack\chendan\ChendanKelly\ChendanKelly\bin\Debug\netcoreapp2.1\ChendanKelly.deps.json
 C:\Projects\Beau.Fullstack\chendan\ChendanKelly\ChendanKelly\bin\Debug\netcoreapp2.1\ChendanKelly.runtimeconfig.json
 C:\Projects\Beau.Fullstack\chendan\ChendanKelly\ChendanKelly\bin\Debug\netcoreapp2.1\ChendanKelly.runtimeconfig.dev.json
@@ -55,6 +57,7 @@ C:\Projects\Beau.Fullstack\chendan\ChendanKelly\ChendanKelly\obj\Debug\netcoreap
 C:\Projects\Beau.Fullstack\chendan\ChendanKelly\ChendanKelly\obj\Debug\netcoreapp2.1\Razor\Views\Home\DataSource.g.cshtml.cs
 C:\Projects\Beau.Fullstack\chendan\ChendanKelly\ChendanKelly\obj\Debug\netcoreapp2.1\Razor\Views\Home\Index.g.cshtml.cs
 C:\Projects\Beau.Fullstack\chendan\ChendanKelly\ChendanKelly\obj\Debug\netcoreapp2.1\Razor\Views\Home\Privacy.g.cshtml.cs
+C:\Projects\Beau.Fullstack\chendan\ChendanKelly\ChendanKelly\obj\Debug\netcoreapp2.1\Razor\Views\Home\Results.g.cshtml.cs
 C:\Projects\Beau.Fullstack\chendan\ChendanKelly\ChendanKelly\obj\Debug\netcoreapp2.1\Razor\Views\Shared\Error.g.cshtml.cs
 C:\Projects\Beau.Fullstack\chendan\ChendanKelly\ChendanKelly\obj\Debug\netcoreapp2.1\Razor\Views\Shared\_CookieConsentPartial.g.cshtml.cs
 C:\Projects\Beau.Fullstack\chendan\ChendanKelly\ChendanKelly\obj\Debug\netcoreapp2.1\Razor\Views\Shared\_Layout.g.cshtml.cs
@@ -68,7 +71,3 @@ C:\Projects\Beau.Fullstack\chendan\ChendanKelly\ChendanKelly\obj\Debug\netcoreap
 C:\Projects\Beau.Fullstack\chendan\ChendanKelly\ChendanKelly\obj\Debug\netcoreapp2.1\ChendanKelly.dll
 C:\Projects\Beau.Fullstack\chendan\ChendanKelly\ChendanKelly\obj\Debug\netcoreapp2.1\ChendanKelly.pdb
 C:\Projects\Beau.Fullstack\chendan\ChendanKelly\ChendanKelly\obj\Debug\netcoreapp2.1\ChendanKelly.csproj.CopyComplete
-C:\Projects\ChendanKelly\chendan\ChendanKelly\ChendanKelly\obj\Debug\netcoreapp2.1\Razor\Views\Home\Results.g.cshtml.cs
-C:\Projects\Beau.Fullstack\chendan\ChendanKelly\ChendanKelly\obj\Debug\netcoreapp2.1\Razor\Views\Home\Results.g.cshtml.cs
-C:\Projects\Beau.Fullstack\chendan\ChendanKelly\ChendanKelly\obj\Debug\netcoreapp2.1\ChendanKelly.csprojAssemblyReference.cache
-C:\Projects\ChendanKelly\chendan\ChendanKelly\ChendanKelly\obj\Debug\netcoreapp2.1\ChendanKelly.csprojAssemblyReference.cache
